@@ -132,7 +132,6 @@ int Application::run()
         const auto material = new Qt3DExtras::QPhongMaterial;
         material->setDiffuse(color);
 
-        //Cuboid
         const auto entity = new QEntity{rootEntity};
         entity->addComponent(renderer);
         entity->addComponent(material);
