@@ -67,6 +67,11 @@ private:
     QVector3D m_normal;
 };
 
+inline Vertex operator*(const QMatrix4x4 &matrix, const Vertex &vertex)
+{
+    return Vertex{matrix * vertex.position(), matrix * vertex.normal()};
+}
+
 ///  Represents a plane in 3D space.
 class Plane
 {
@@ -130,10 +135,14 @@ public:
     bool operator==(const Polygon &rhs) const { return fields() == rhs.fields(); }
 
 private:
+    friend Polygon operator*(const QMatrix4x4 &, const Polygon &);
+
     QList<Vertex> m_vertices;
     QVariant m_shared;
     Plane m_plane;
 };
+
+Polygon operator*(const QMatrix4x4 &, const Polygon &);
 
 /// Holds a binary space partition tree representing a 3D solid. Two solids can
 /// be combined using the `union()`, `subtract()`, and `intersect()` methods.
@@ -150,8 +159,12 @@ public:
     Geometry inverse() const;
 
 private:
+    friend Geometry operator*(const QMatrix4x4 &matrix, const Geometry &geometry);
+
     QList<Polygon> m_polygons;
 };
+
+Geometry operator*(const QMatrix4x4 &matrix, const Geometry &geometry);
 
 /// Holds a node in a BSP tree. A BSP tree is built from a collection of polygons
 /// by picking a polygon to split along. That polygon (and all other coplanar

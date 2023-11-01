@@ -54,6 +54,14 @@ QMatrix4x4 translation(Args... args)
 }
 
 template<typename... Args>
+QMatrix4x4 rotation(Args... args)
+{
+    auto matrix = QMatrix4x4{};
+    matrix.rotate(args...);
+    return matrix;
+}
+
+template<typename... Args>
 QMatrix4x4 scale(Args... args)
 {
     auto matrix = QMatrix4x4{};
@@ -178,8 +186,10 @@ int Application::run()
 
     // CSG operations on native QtCSG geometries
     {
+
         const auto delta = 0.3f;
-        const auto a = QtCSG::cube({-delta, -delta, +delta});
+        const auto r = rotation(45, 1, 1, 0);
+        const auto a = r * QtCSG::cube({-delta, -delta, +delta});
         const auto b = QtCSG::cube({+delta, +delta, -delta});
         createEntity(new Qt3DCSG::Mesh{a | b}, {4.5f, -5.0f, -1.5f}, colors[3]);
     }
@@ -199,7 +209,8 @@ int Application::run()
     // CSG operations on native Qt3D geometries
     {
         const auto delta = 0.3f;
-        const auto a = Qt3DCSG::geometry(cuboidMesh, translation(-delta, -delta, +delta));
+        const auto r = rotation(45, 1, 1, 0);
+        const auto a = Qt3DCSG::geometry(cuboidMesh, translation(-delta, -delta, +delta) * r);
         const auto b = Qt3DCSG::geometry(cuboidMesh, translation(+delta, +delta, -delta));
         createEntity(new Qt3DCSG::Mesh{a | b}, {9.0f, -5.0f, -1.5f}, colors[4]);
     }
