@@ -14,6 +14,9 @@ add_compile_definitions(QT_DISABLE_DEPRECATED_BEFORE=0x050f00)
 add_compile_options(-Werror=switch -Werror=unused)
 
 # Find Qt5 or Qt6
+set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
+set(CMAKE_FIND_PACKAGE_SORT_ORDER NAME)
+
 set(QT_MODULES Core Gui Test Widgets 3DCore 3DExtras 3DRender)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS ${QT_MODULES})
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${QT_MODULES})
