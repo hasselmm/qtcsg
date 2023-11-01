@@ -20,6 +20,7 @@
 
 #include <QDebug>
 
+#include <QMatrix4x4>
 #include <cmath>
 
 namespace QtCSG {
@@ -69,6 +70,19 @@ void Polygon::flip()
     std::reverse(m_vertices.begin(), m_vertices.end());
     std::for_each(m_vertices.begin(), m_vertices.end(), &QtCSG::flip<Vertex>);
     m_plane.flip();
+}
+
+Polygon operator*(const QMatrix4x4 &matrix, const Polygon &polygon)
+{
+    auto transformed = QList<Vertex>{};
+    transformed.reserve(polygon.m_vertices.count());
+
+    std::transform(polygon.m_vertices.cbegin(), polygon.m_vertices.cend(),
+                   std::back_inserter(transformed), [matrix](const Vertex &vertex) {
+        return matrix * vertex;
+    });
+
+    return Polygon{std::move(transformed)};
 }
 
 void Polygon::split(const Plane &plane,
@@ -155,6 +169,19 @@ Geometry Geometry::inverse() const
     std::copy(m_polygons.begin(), m_polygons.end(), std::back_inserter(inverse));
     std::for_each(inverse.begin(), inverse.end(), &flip<Polygon>);
     return {std::move(inverse)};
+}
+
+Geometry operator*(const QMatrix4x4 &matrix, const Geometry &geometry)
+{
+    auto transformed = QList<Polygon>{};
+    transformed.reserve(geometry.m_polygons.count());
+
+    std::transform(geometry.m_polygons.cbegin(), geometry.m_polygons.cend(),
+                   std::back_inserter(transformed), [matrix](const auto &polygon) {
+        return matrix * polygon;
+    });
+
+    return {std::move(transformed)};
 }
 
 Geometry cube(QVector3D center, QVector3D size)
