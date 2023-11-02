@@ -77,28 +77,43 @@ private slots:
 
     void testUnion_data()
     {
-        QTest::addColumn<float>("delta");
+        QTest::addColumn<float>("deltaX");
+        QTest::addColumn<float>("deltaY");
+        QTest::addColumn<float>("deltaZ");
 
-        QTest::newRow("delta=0.0") << 0.0f;
-        QTest::newRow("delta=0.5") << 0.5f;
-        QTest::newRow("delta=1.0") << 1.0f;
-        QTest::newRow("delta=1.5") << 1.5f;
+        QTest::addColumn<int>("expectedPolygonCount");
+
+        QTest::newRow("identity")        << 0.0f << 0.0f << 0.0f << 6 * 1;
+
+        QTest::newRow("overlapping:xyz") << 0.5f << 0.5f << 0.5f << 6 * 4;
+        QTest::newRow("adjacent:xyz")    << 1.0f << 1.0f << 1.0f << 6 * 2;
+        QTest::newRow("distant:xyz")     << 1.5f << 1.5f << 1.5f << 6 * 2;
+
+        QTest::newRow("overlapping:x")   << 0.5f << 0.0f << 0.0f << 4 * 3 + 2;
+        QTest::newRow("adjacent:x")      << 1.0f << 0.0f << 0.0f << 6 * 2 - 2;
+        QTest::newRow("distant:x")       << 1.5f << 0.0f << 0.0f << 6 * 2;
     }
 
     void testUnion()
     {
-        QFETCH(float, delta);
+        const QFETCH(float, deltaX);
+        const QFETCH(float, deltaY);
+        const QFETCH(float, deltaZ);
 
-        const auto a = cube({-delta, -delta, +delta});
-        const auto b = cube({+delta, +delta, -delta});
+        const QFETCH(int, expectedPolygonCount);
+
+        const auto a = cube({-deltaX, -deltaY, +deltaZ});
+        const auto b = cube({+deltaX, +deltaY, -deltaZ});
         const auto c = merge(a, b);
 
-        if (qFuzzyCompare(delta, 0))
+        if (qFuzzyCompare(deltaX, 0)
+            && qFuzzyCompare(deltaY, 0)
+            && qFuzzyCompare(deltaZ, 0))
             QCOMPARE(a.polygons(), b.polygons());
 
         QCOMPARE(a.polygons().count(), 6);
         QCOMPARE(b.polygons().count(), 6);
-        QCOMPARE(c.polygons().count(), 6);
+        QCOMPARE(c.polygons().count(), expectedPolygonCount);
     }
 
     void testNodeConstruct()
@@ -112,7 +127,7 @@ private slots:
             for (auto subNode = &node; subNode; subNode = subNode->back().get(), ++depth) {
                 QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().count())),
                          make_pair(depth, 1));
-                QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().first().vertices().count())),
+                QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().constFirst().vertices().count())),
                          make_pair(depth, 4));
                 QCOMPARE(make_pair(depth, !!subNode->front()),
                          make_pair(depth, false));
@@ -141,7 +156,7 @@ private slots:
             for (auto subNode = &node; subNode; subNode = subNode->back().get(), ++depth) {
                 QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().count())),
                          make_pair(depth, 1));
-                QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().first().vertices().count())),
+                QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().constFirst().vertices().count())),
                          make_pair(depth, 4));
                 QCOMPARE(make_pair(depth, !!subNode->front()),
                          make_pair(depth, depth < 5));
