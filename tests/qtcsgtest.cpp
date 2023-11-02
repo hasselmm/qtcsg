@@ -79,15 +79,19 @@ private slots:
     {
         QTest::addColumn<float>("delta");
 
-        QTest::newRow("delta=0.0") << 0.0f;
-        QTest::newRow("delta=0.5") << 0.5f;
-        QTest::newRow("delta=1.0") << 1.0f;
-        QTest::newRow("delta=1.5") << 1.5f;
+        QTest::addColumn<int>("expectedPolygonCount");
+
+        QTest::newRow("identity")    << 0.0f << 6 * 1;
+
+        QTest::newRow("overlapping") << 0.5f << 6 * 4;
+        QTest::newRow("adjacent")    << 1.0f << 6 * 2;
+        QTest::newRow("distant")     << 1.5f << 6 * 2;
     }
 
     void testUnion()
     {
         QFETCH(float, delta);
+        const QFETCH(int, expectedPolygonCount);
 
         const auto a = cube({-delta, -delta, +delta});
         const auto b = cube({+delta, +delta, -delta});
@@ -98,7 +102,7 @@ private slots:
 
         QCOMPARE(a.polygons().count(), 6);
         QCOMPARE(b.polygons().count(), 6);
-        QCOMPARE(c.polygons().count(), 6);
+        QCOMPARE(c.polygons().count(), expectedPolygonCount);
     }
 
     void testNodeConstruct()
