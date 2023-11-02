@@ -173,6 +173,87 @@ private slots:
         QCOMPARE(plane.normal(), expectedNormal);
         QCOMPARE(plane.w(), -1);
     }
+
+    void testSplitWithAllInFront()
+    {
+        // Vertical YZ plane through the origin
+        const auto plane = Plane::fromPoints({0, 0, 0}, {0, 1, 0}, {0, 0, 1});
+
+        // Polygon in the +x hemisphere
+        const auto poly = Polygon{{
+                                   Vertex{{1, 0, 0}, {1, 0, 0}},
+                                   Vertex{{1, 1, 0}, {1, 0, 0}},
+                                   Vertex{{1, 0, 1}, {1, 0, 0}},
+                                   }};
+
+        auto cpf = QList<Polygon>{};
+        auto cpb = QList<Polygon>{};
+        auto front = QList<Polygon>{};
+        auto back = QList<Polygon>{};
+
+        poly.split(plane, &cpf, &cpb, &front, &back);
+
+        QCOMPARE(cpf.length(), 0);
+        QCOMPARE(cpb.length(), 0);
+        QCOMPARE(front.length(), 1);
+        QCOMPARE(back.length(), 0);
+    }
+
+    void testSplitWithAllBehind()
+    {
+        // Vertical YZ plane through the origin
+        const auto plane = Plane::fromPoints({0, 0, 0}, {0, 1, 0}, {0, 0, 1});
+
+        // Polygon in the -x hemisphere
+        const auto poly = Polygon{{
+                                   Vertex{{-1, 0, 0}, {1, 0, 0}},
+                                   Vertex{{-1, 1, 0}, {1, 0, 0}},
+                                   Vertex{{-1, 0, 1}, {1, 0, 0}},
+                                   }};
+
+        auto cpf = QList<Polygon>{};
+        auto cpb = QList<Polygon>{};
+        auto front = QList<Polygon>{};
+        auto back = QList<Polygon>{};
+
+        poly.split(plane, &cpf, &cpb, &front, &back);
+
+        QCOMPARE(cpf.length(), 0);
+        QCOMPARE(cpb.length(), 0);
+        QCOMPARE(front.length(), 0);
+        QCOMPARE(back.length(), 1);
+    }
+
+    void testSplitDownTheMiddle()
+    {
+        // Vertical YZ plane through the origin
+        const auto plane = Plane::fromPoints({0, 0, 0}, {0, 1, 0}, {0, 0, 1});
+
+        // Polygon describing a square on the XY plane with radius 2
+        const auto poly = Polygon{{
+                                   Vertex{{-1, +1, 0}, {0, 0, 1}},
+                                   Vertex{{-1, -1, 0}, {0, 0, 1}},
+                                   Vertex{{+1, -1, 0}, {0, 0, 1}},
+                                   Vertex{{+1, +1, 0}, {0, 0, 1}},
+                                   }};
+
+        auto cpf = QList<Polygon>{};
+        auto cpb = QList<Polygon>{};
+        auto front = QList<Polygon>{};
+        auto back = QList<Polygon>{};
+
+        poly.split(plane, &cpf, &cpb, &front, &back);
+
+        QCOMPARE(cpf.length(), 0);
+        QCOMPARE(cpb.length(), 0);
+        QCOMPARE(front.length(), 1);
+        QCOMPARE(back.length(), 1);
+
+        for (const auto &v: front.constFirst().vertices())
+            QVERIFY2(v.position().x() >= 0, "All front vertices must have x >= 0");
+        for (const auto &v: back.constFirst().vertices())
+            QVERIFY2(v.position().x() <= 0, "All back vertices must have x <= 0");
+    }
 };
 
 } // namespace QtCSG::Tests
