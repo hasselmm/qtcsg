@@ -1,0 +1,96 @@
+name: Continuous Integration
+on:
+  push:
+    branches: [ main ]
+
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  Build-on-Ubuntu:
+    name: "Build on Ubuntu"
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.6.0'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'gcc_64'
+          modules: 'qt3d'
+          tools: 'tools_ninja'
+          cache: true
+
+      - name: Set up compiler cache
+        uses: chocobo1/setup-ccache-action@v1
+        with:
+          ccache_options: |
+            max_size=100M
+          override_cache_key: ccache-linux-clang-x86_64
+          update_packager_index: false
+
+      - name: Configure project
+        run: >
+          mkdir build && cd build && cmake -GNinja
+          -DCMAKE_C_COMPILER:FILEPATH=/usr/bin/clang-15
+          -DCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/clang++-15
+          -DCMAKE_MAKE_PROGRAM:FILEPATH=$IQTA_TOOLS/Ninja/ninja
+          ..
+
+      - name: Build project
+        run: cd build && cmake --build . --target all -- -k0
+
+      - name: Test project
+        run: cd build && ctest --rerun-failed --output-on-failure
+        continue-on-error: true # remove once tests are expected to be stable
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+  Build-on-Windows:
+    name: "Build on Windows"
+    runs-on: windows-2022
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.6.0'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw'
+          modules: 'qt3d'
+          tools: 'tools_mingw90 tools_ninja'
+          cache: true
+
+      - name: Set up compiler cache
+        uses: chocobo1/setup-ccache-action@v1
+        with:
+          ccache_options: |
+            max_size=100M
+          override_cache_key: ccache-windows-mingw64
+          windows_compile_environment: msvc # guess "windows_package_manager: choco" would be a better name
+
+      - name: Configure project
+        run: >
+          mkdir build && cd build && cmake -GNinja
+          -DCMAKE_C_COMPILER:FILEPATH=$env:IQTA_TOOLS/mingw1120_64/bin/gcc.exe
+          -DCMAKE_CXX_COMPILER:FILEPATH=$env:IQTA_TOOLS/mingw1120_64/bin/g++.exe
+          -DCMAKE_MAKE_PROGRAM:FILEPATH=$env:IQTA_TOOLS/Ninja/ninja.exe
+          ..
+
+      - name: Build project
+        run: cd build && cmake --build . --target all -- -k0
+
+      - name: Test project
+        run: cd build && ctest --rerun-failed --output-on-failure
+        continue-on-error: true # remove once tests are expected to be stable
