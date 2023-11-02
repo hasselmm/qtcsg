@@ -77,27 +77,38 @@ private slots:
 
     void testUnion_data()
     {
-        QTest::addColumn<float>("delta");
+        QTest::addColumn<float>("deltaX");
+        QTest::addColumn<float>("deltaY");
+        QTest::addColumn<float>("deltaZ");
 
         QTest::addColumn<int>("expectedPolygonCount");
 
-        QTest::newRow("identity")    << 0.0f << 6 * 1;
+        QTest::newRow("identity")        << 0.0f << 0.0f << 0.0f << 6 * 1;
 
-        QTest::newRow("overlapping") << 0.5f << 6 * 4;
-        QTest::newRow("adjacent")    << 1.0f << 6 * 2;
-        QTest::newRow("distant")     << 1.5f << 6 * 2;
+        QTest::newRow("overlapping:xyz") << 0.5f << 0.5f << 0.5f << 6 * 4;
+        QTest::newRow("adjacent:xyz")    << 1.0f << 1.0f << 1.0f << 6 * 2;
+        QTest::newRow("distant:xyz")     << 1.5f << 1.5f << 1.5f << 6 * 2;
+
+        QTest::newRow("overlapping:x")   << 0.5f << 0.0f << 0.0f << 4 * 3 + 2;
+        QTest::newRow("adjacent:x")      << 1.0f << 0.0f << 0.0f << 6 * 2 - 2;
+        QTest::newRow("distant:x")       << 1.5f << 0.0f << 0.0f << 6 * 2;
     }
 
     void testUnion()
     {
-        QFETCH(float, delta);
+        const QFETCH(float, deltaX);
+        const QFETCH(float, deltaY);
+        const QFETCH(float, deltaZ);
+
         const QFETCH(int, expectedPolygonCount);
 
-        const auto a = cube({-delta, -delta, +delta});
-        const auto b = cube({+delta, +delta, -delta});
+        const auto a = cube({-deltaX, -deltaY, +deltaZ});
+        const auto b = cube({+deltaX, +deltaY, -deltaZ});
         const auto c = merge(a, b);
 
-        if (qFuzzyCompare(delta, 0))
+        if (qFuzzyCompare(deltaX, 0)
+            && qFuzzyCompare(deltaY, 0)
+            && qFuzzyCompare(deltaZ, 0))
             QCOMPARE(a.polygons(), b.polygons());
 
         QCOMPARE(a.polygons().count(), 6);
