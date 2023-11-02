@@ -127,7 +127,7 @@ private slots:
             for (auto subNode = &node; subNode; subNode = subNode->back().get(), ++depth) {
                 QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().count())),
                          make_pair(depth, 1));
-                QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().first().vertices().count())),
+                QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().constFirst().vertices().count())),
                          make_pair(depth, 4));
                 QCOMPARE(make_pair(depth, !!subNode->front()),
                          make_pair(depth, false));
@@ -156,7 +156,7 @@ private slots:
             for (auto subNode = &node; subNode; subNode = subNode->back().get(), ++depth) {
                 QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().count())),
                          make_pair(depth, 1));
-                QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().first().vertices().count())),
+                QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().constFirst().vertices().count())),
                          make_pair(depth, 4));
                 QCOMPARE(make_pair(depth, !!subNode->front()),
                          make_pair(depth, depth < 5));
