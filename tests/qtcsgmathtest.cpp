@@ -58,6 +58,75 @@ private slots:
         const QFETCH(QVector3D, expectedResult);
         QCOMPARE(lerp(a, b, t), expectedResult);
     }
+
+    void testFindMatrixComponents_data()
+    {
+        QTest::addColumn<QMatrix4x4>("matrix");
+        QTest::addColumn<QVector3D> ("expectedTranslation");
+        QTest::addColumn<QVector3D> ("expectedScale");
+        QTest::addColumn<QMatrix4x4>("expectedRotation");
+
+        const auto mixed = [](const QVector3D &v)
+        {
+            const auto s = scaled({v.x() ? 2.0f : 1.0f,
+                                   v.y() ? 4.0f : 1.0f,
+                                   v.z() ? 8.0f : 1.0f});
+
+            const auto t = translated({v.x() * 1.0f,
+                                       v.y() * 2.0f,
+                                       v.z() * 3.0f});
+
+            return t * rotated(90, v) * s;
+        };
+
+        const auto t0   = QVector3D{0, 0, 0};
+        const auto tx   = QVector3D{1, 0, 0};
+        const auto ty   = QVector3D{0, 2, 0};
+        const auto tz   = QVector3D{0, 0, 3};
+        const auto txyz = QVector3D{1, 2, 3};
+
+        const auto s0   = QVector3D{1, 1, 1};
+        const auto sx   = QVector3D{2, 1, 1};
+        const auto sy   = QVector3D{1, 4, 1};
+        const auto sz   = QVector3D{1, 1, 8};
+        const auto sxyz = QVector3D{2, 4, 8};
+
+        const auto r0   = identity();
+        const auto rx   = rotated(90, {1, 0, 0});
+        const auto ry   = rotated(90, {0, 1, 0});
+        const auto rz   = rotated(90, {0, 0, 1});
+        const auto rxyz = rotated(90, {1, 1, 1});
+
+        QTest::newRow("identity")       <<    identity()          << t0   << s0   << r0;
+        QTest::newRow("translated-x")   <<  translated({1, 0, 0}) << tx   << s0   << r0;
+        QTest::newRow("translated-y")   <<  translated({0, 2, 0}) << ty   << s0   << r0;
+        QTest::newRow("translated-z")   <<  translated({0, 0, 3}) << tz   << s0   << r0;
+        QTest::newRow("translated-xyz") <<  translated({1, 2, 3}) << txyz << s0   << r0;
+        QTest::newRow("scaled-x")       <<      scaled({2, 1, 1}) << t0   << sx   << r0;
+        QTest::newRow("scaled-y")       <<      scaled({1, 4, 1}) << t0   << sy   << r0;
+        QTest::newRow("scaled-z")       <<      scaled({1, 1, 8}) << t0   << sz   << r0;
+        QTest::newRow("scaled-xyz")     <<      scaled({2, 4, 8}) << t0   << sxyz << r0;
+        QTest::newRow("rotated-x")      << rotated(90, {1, 0, 0}) << t0   << s0   << rx;
+        QTest::newRow("rotated-y")      << rotated(90, {0, 1, 0}) << t0   << s0   << ry;
+        QTest::newRow("rotated-z")      << rotated(90, {0, 0, 1}) << t0   << s0   << rz;
+        QTest::newRow("rotated-xyz")    << rotated(90, {1, 1, 1}) << t0   << s0   << rxyz;
+        QTest::newRow("mixed-x")        <<       mixed({1, 0, 0}) << tx   << sx   << rx;
+        QTest::newRow("mixed-y")        <<       mixed({0, 1, 0}) << ty   << sy   << ry;
+        QTest::newRow("mixed-z")        <<       mixed({0, 0, 1}) << tz   << sz   << rz;
+        QTest::newRow("mixed-xyz")      <<       mixed({1, 1, 1}) << txyz << sxyz << rxyz;
+    }
+
+    void testFindMatrixComponents()
+    {
+        const QFETCH(QMatrix4x4, matrix);
+        const QFETCH(QVector3D,  expectedTranslation);
+        const QFETCH(QVector3D,  expectedScale);
+        const QFETCH(QMatrix4x4, expectedRotation);
+
+        QCOMPARE(findTranslation(matrix), expectedTranslation);
+        QCOMPARE(findScale(matrix),       expectedScale);
+        QCOMPARE(findRotation(matrix),    expectedRotation);
+    }
 };
 
 } // namespace QtCSG::Tests
