@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18)
 
 project(QtCSG VERSION 0.1 LANGUAGES CXX)
 enable_testing()
@@ -14,6 +14,9 @@ list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 add_compile_definitions(QT_DISABLE_DEPRECATED_BEFORE=0x050f00)
 add_compile_options(-Werror=switch -Werror=unused)
+
+include(QtCSGEnableAlternateLinker)
+qtcsg_enable_alternate_linker()
 
 # Find Qt5 or Qt6
 set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
