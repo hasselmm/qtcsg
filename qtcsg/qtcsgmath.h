@@ -19,6 +19,7 @@
 #ifndef QTCSGMATH_H
 #define QTCSGMATH_H
 
+#include <QMatrix4x4>
 #include <QVector3D>
 
 namespace QtCSG {
@@ -27,6 +28,36 @@ namespace QtCSG {
 {
     return a + (b - a) * t;
 }
+
+[[nodiscard]] inline QMatrix4x4 identity()
+{
+    return QMatrix4x4{};
+}
+
+[[nodiscard]] inline QMatrix4x4 scaled(const QVector3D &scale)
+{
+    auto matrix = QMatrix4x4{};
+    matrix.scale(scale);
+    return matrix;
+}
+
+[[nodiscard]] inline QMatrix4x4 translated(const QVector3D &translation)
+{
+    auto matrix = QMatrix4x4{};
+    matrix.translate(translation);
+    return matrix;
+}
+
+[[nodiscard]] inline QMatrix4x4 rotated(float angle, const QVector3D &axis)
+{
+    auto matrix = QMatrix4x4{};
+    matrix.rotate(angle, axis);
+    return matrix;
+}
+
+[[nodiscard]] QVector3D  findTranslation(const QMatrix4x4 &matrix);
+[[nodiscard]] QVector3D  findScale      (const QMatrix4x4 &matrix);
+[[nodiscard]] QMatrix4x4 findRotation   (const QMatrix4x4 &matrix);
 
 } // namespace QtCSG
 
