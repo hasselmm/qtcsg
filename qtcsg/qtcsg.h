@@ -40,6 +40,8 @@ namespace QtCSG {
 class Vertex
 {
 public:
+    Vertex() = default;
+
     explicit Vertex(QVector3D position, QVector3D normal)
         : m_position{std::move(position)}
         , m_normal{std::move(normal)}
@@ -108,6 +110,8 @@ private:
 class Polygon
 {
 public:
+    Polygon() = default;
+
     explicit Polygon(QList<Vertex> vertices, QVariant shared = {})
         : m_vertices{std::move(vertices)}
         , m_shared{std::move(shared)}
@@ -150,6 +154,7 @@ private:
 class Geometry
 {
 public:
+    Geometry() = default;
     Geometry(QList<Polygon> polygons)
         : m_polygons{std::move(polygons)}
     {}
@@ -292,5 +297,10 @@ QDebug operator<<(QDebug debug, Polygon polygon);
 QDebug operator<<(QDebug debug, Vertex vertex);
 
 } // namespace QtCSG
+
+Q_DECLARE_METATYPE(QtCSG::Geometry)
+Q_DECLARE_METATYPE(QtCSG::Plane)
+Q_DECLARE_METATYPE(QtCSG::Polygon)
+Q_DECLARE_METATYPE(QtCSG::Vertex)
 
 #endif // QTCSG_H
