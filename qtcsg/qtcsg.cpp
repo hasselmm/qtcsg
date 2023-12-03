@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "qtcsg.h"
+#include "qtcsgmath.h"
 
 #include <QDebug>
 
@@ -26,11 +27,6 @@
 namespace QtCSG {
 
 namespace {
-
-QVector3D lerp(QVector3D a, QVector3D b, float t)
-{
-    return a + (b - a) * t;
-}
 
 template<class T>
 void flip(T &o)
