@@ -106,12 +106,13 @@ void Polygon::split(const Plane &plane,
     // Classify each point as well as the entire polygon into one of the above four classes.
     auto polygonType = Coplanar;
     auto vertexTypes = std::vector<VertexType>{};
+    vertexTypes.reserve(m_vertices.size());
 
     for (const auto &v: m_vertices) {
         const auto t = QVector3D::dotProduct(plane.normal(), v.position()) - plane.w();
         const auto type = (t < -epsilon) ? Back : (t > epsilon) ? Front : Coplanar;
         polygonType = static_cast<VertexType>(polygonType | type);
-        vertexTypes.push_back(type);
+        vertexTypes.emplace_back(type);
     }
 
     // Put the polygon in the correct list, splitting it when necessary.
