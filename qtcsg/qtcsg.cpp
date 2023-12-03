@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "qtcsg.h"
+#include "qtcsgmath.h"
 
 #include <QDebug>
 
@@ -26,11 +27,6 @@
 namespace QtCSG {
 
 namespace {
-
-QVector3D lerp(QVector3D a, QVector3D b, float t)
-{
-    return a + (b - a) * t;
-}
 
 template<class T>
 void flip(T &o)
@@ -47,7 +43,9 @@ void Vertex::flip()
 
 Vertex Vertex::transformed(const QMatrix4x4 &matrix) const
 {
-    return Vertex{matrix * position(), matrix * normal()};
+    auto newPosition = matrix * position();
+    auto newNormal = findRotation(matrix) * normal(); // only rotate; do not translate, or scale
+    return Vertex{std::move(newPosition), std::move(newNormal)};
 }
 
 Vertex Vertex::interpolated(Vertex other, float t) const

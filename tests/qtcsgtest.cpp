@@ -16,9 +16,10 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#include <qtcsg/qtcsg.h>
+#include "qtcsgtest.h"
 
-#include <QTest>
+#include <qtcsg/qtcsg.h>
+#include <qtcsg/qtcsgmath.h>
 
 namespace QtCSG::Tests {
 
@@ -172,6 +173,146 @@ private slots:
         QVERIFY(!plane.isNull());
         QCOMPARE(plane.normal(), expectedNormal);
         QCOMPARE(plane.w(), -1);
+    }
+
+    void testSplitWithAllInFront()
+    {
+        // Vertical YZ plane through the origin
+        const auto plane = Plane::fromPoints({0, 0, 0}, {0, 1, 0}, {0, 0, 1});
+
+        // Polygon in the +x hemisphere
+        const auto poly = Polygon{{
+                                   Vertex{{1, 0, 0}, {1, 0, 0}},
+                                   Vertex{{1, 1, 0}, {1, 0, 0}},
+                                   Vertex{{1, 0, 1}, {1, 0, 0}},
+                                   }};
+
+        auto cpf = QList<Polygon>{};
+        auto cpb = QList<Polygon>{};
+        auto front = QList<Polygon>{};
+        auto back = QList<Polygon>{};
+
+        poly.split(plane, &cpf, &cpb, &front, &back);
+
+        QCOMPARE(cpf.length(), 0);
+        QCOMPARE(cpb.length(), 0);
+        QCOMPARE(front.length(), 1);
+        QCOMPARE(back.length(), 0);
+    }
+
+    void testSplitWithAllBehind()
+    {
+        // Vertical YZ plane through the origin
+        const auto plane = Plane::fromPoints({0, 0, 0}, {0, 1, 0}, {0, 0, 1});
+
+        // Polygon in the -x hemisphere
+        const auto poly = Polygon{{
+                                   Vertex{{-1, 0, 0}, {1, 0, 0}},
+                                   Vertex{{-1, 1, 0}, {1, 0, 0}},
+                                   Vertex{{-1, 0, 1}, {1, 0, 0}},
+                                   }};
+
+        auto cpf = QList<Polygon>{};
+        auto cpb = QList<Polygon>{};
+        auto front = QList<Polygon>{};
+        auto back = QList<Polygon>{};
+
+        poly.split(plane, &cpf, &cpb, &front, &back);
+
+        QCOMPARE(cpf.length(), 0);
+        QCOMPARE(cpb.length(), 0);
+        QCOMPARE(front.length(), 0);
+        QCOMPARE(back.length(), 1);
+    }
+
+    void testSplitDownTheMiddle()
+    {
+        // Vertical YZ plane through the origin
+        const auto plane = Plane::fromPoints({0, 0, 0}, {0, 1, 0}, {0, 0, 1});
+
+        // Polygon describing a square on the XY plane with radius 2
+        const auto poly = Polygon{{
+                                   Vertex{{-1, +1, 0}, {0, 0, 1}},
+                                   Vertex{{-1, -1, 0}, {0, 0, 1}},
+                                   Vertex{{+1, -1, 0}, {0, 0, 1}},
+                                   Vertex{{+1, +1, 0}, {0, 0, 1}},
+                                   }};
+
+        auto cpf = QList<Polygon>{};
+        auto cpb = QList<Polygon>{};
+        auto front = QList<Polygon>{};
+        auto back = QList<Polygon>{};
+
+        poly.split(plane, &cpf, &cpb, &front, &back);
+
+        QCOMPARE(cpf.length(), 0);
+        QCOMPARE(cpb.length(), 0);
+        QCOMPARE(front.length(), 1);
+        QCOMPARE(back.length(), 1);
+
+        for (const auto &v: front.constFirst().vertices())
+            QVERIFY2(v.position().x() >= 0, "All front vertices must have x >= 0");
+        for (const auto &v: back.constFirst().vertices())
+            QVERIFY2(v.position().x() <= 0, "All back vertices must have x <= 0");
+    }
+
+    void testVertexTransform_data()
+    {
+        QTest::addColumn<Vertex>    ("vertex");
+        QTest::addColumn<QMatrix4x4>("matrix");
+        QTest::addColumn<Vertex>    ("expectedResult");
+        QTest::addColumn<float>     ("expectedLength");
+
+        const auto ra = +2.577350f;
+        const auto rb = +0.845299f;
+        const auto na = +0.333333f;
+        const auto nb = +0.910684f;
+        const auto nc = -0.244017f;
+
+        const auto v0   = Vertex{{+1, +2, +3}, {+1, +0, +0}};
+        const auto sx   = Vertex{{+2, +2, +3}, {+1, +0, +0}};
+        const auto sy   = Vertex{{+1, +4, +3}, {+1, +0, +0}};
+        const auto sz   = Vertex{{+1, +2, +6}, {+1, +0, +0}};
+        const auto sxyz = Vertex{{+2, +4, +6}, {+1, +0, +0}};
+        const auto tx   = Vertex{{+2, +2, +3}, {+1, +0, +0}};
+        const auto ty   = Vertex{{+1, +3, +3}, {+1, +0, +0}};
+        const auto tz   = Vertex{{+1, +2, +4}, {+1, +0, +0}};
+        const auto txyz = Vertex{{+2, +3, +4}, {+1, +0, +0}};
+        const auto rx   = Vertex{{+1, -3, +2}, {+1, +0, +0}};
+        const auto ry   = Vertex{{+3, +2, -1}, {+0, +0, -1}};
+        const auto rz   = Vertex{{-2, +1, +3}, {+0, +1, +0}};
+        const auto rxyz = Vertex{{ra, rb, ra}, {na, nb, nc}};
+
+        QTest::newRow("identity")       << v0 <<    identity()          << v0   << 14.0f;
+        QTest::newRow("scaled-x")       << v0 <<      scaled({2, 1, 1}) << sx   << 17.0f;
+        QTest::newRow("scaled-y")       << v0 <<      scaled({1, 2, 1}) << sy   << 26.0f;
+        QTest::newRow("scaled-z")       << v0 <<      scaled({1, 1, 2}) << sz   << 41.0f;
+        QTest::newRow("scaled-xyz")     << v0 <<      scaled({2, 2, 2}) << sxyz << 56.0f;
+        QTest::newRow("translated-x")   << v0 <<  translated({1, 0, 0}) << tx   << 17.0f;
+        QTest::newRow("translated-y")   << v0 <<  translated({0, 1, 0}) << ty   << 19.0f;
+        QTest::newRow("translated-z")   << v0 <<  translated({0, 0, 1}) << tz   << 21.0f;
+        QTest::newRow("translated-xyz") << v0 <<  translated({1, 1, 1}) << txyz << 29.0f;
+        QTest::newRow("rotated-x")      << v0 << rotated(90, {1, 0, 0}) << rx   << 14.0f;
+        QTest::newRow("rotated-y")      << v0 << rotated(90, {0, 1, 0}) << ry   << 14.0f;
+        QTest::newRow("rotated-z")      << v0 << rotated(90, {0, 0, 1}) << rz   << 14.0f;
+        QTest::newRow("rotated-xyz")    << v0 << rotated(90, {1, 1, 1}) << rxyz << 14.0f;
+    }
+
+    void testVertexTransform()
+    {
+        const QFETCH(Vertex,     vertex);
+        const QFETCH(QMatrix4x4, matrix);
+        const QFETCH(Vertex,     expectedResult);
+        const QFETCH(float,      expectedLength);
+
+        const auto transformed = vertex.transformed(matrix);
+
+        QCOMPARE(transformed.position().lengthSquared(), expectedLength);
+        QCOMPARE(transformed.normal().lengthSquared(),   1.0f);
+
+        QCOMPARE(transformed.position(), expectedResult.position());
+        QCOMPARE(transformed.normal(),   expectedResult.normal());
+        QCOMPARE(transformed,            expectedResult);
     }
 };
 

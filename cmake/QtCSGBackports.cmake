@@ -1,3 +1,11 @@
+if (NOT QT_VERSION STREQUAL Qt${QT_VERSION_MAJOR}_VERSION)
+    message(FATAL_ERROR "Unexpected version for Qt${QT_VERSION_MAJOR} package: ${Qt${QT_VERSION_MAJOR}_VERSION}")
+endif()
+
+if (NOT QT_DIR STREQUAL Qt${QT_VERSION_MAJOR}_DIR)
+    message(FATAL_ERROR "Unexpected directory for Qt${QT_VERSION_MAJOR} package: ${Qt${QT_VERSION_MAJOR}_DIR}")
+endif()
+
 foreach(module ${QT_MODULES})
     if (NOT TARGET Qt::${module})
         add_library(Qt::${module} ALIAS Qt${QT_VERSION_MAJOR}::${module})
