@@ -2,6 +2,8 @@ add_library(
     QtCSG
     qtcsg.cpp
     qtcsg.h
+    qtcsgio.cpp
+    qtcsgio.h
     qtcsgmath.cpp
     qtcsgmath.h
 )

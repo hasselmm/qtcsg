@@ -8,4 +8,5 @@ add_library(QtCSGTestSuite qtcsgtest.h)
 target_link_libraries(QtCSGTestSuite PUBLIC QtCSG Qt::Test)
 
 qtcsg_add_testsuite(QtCSGTest qtcsgtest.cpp)
+qtcsg_add_testsuite(QtCSGIOTest qtcsgiotest.cpp)
 qtcsg_add_testsuite(QtCSGMathTest qtcsgmathtest.cpp)
