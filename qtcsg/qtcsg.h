@@ -112,7 +112,9 @@ public:
     explicit Polygon(QList<Vertex> vertices, QVariant shared = {})
         : m_vertices{std::move(vertices)}
         , m_shared{std::move(shared)}
-        , m_plane{Plane::fromPoints(m_vertices[0].position(), m_vertices[1].position(), m_vertices[2].position())}
+        , m_plane{Plane::fromPoints(m_vertices[0].position(),
+                                    m_vertices[1].position(),
+                                    m_vertices[2].position())}
     {}
 
     auto vertices() const { return m_vertices; }
