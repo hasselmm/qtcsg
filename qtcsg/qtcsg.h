@@ -82,11 +82,11 @@ public:
         , m_w{w}
     {}
 
+    [[nodiscard]] static Plane fromPoints(QVector3D a, QVector3D b, QVector3D c);
+
     [[nodiscard]] auto isNull() const { return m_normal.isNull(); }
     [[nodiscard]] auto normal() const { return m_normal; }
     [[nodiscard]] auto w() const { return m_w; }
-
-    [[nodiscard]] static Plane fromPoints(QVector3D a, QVector3D b, QVector3D c);
 
     void flip();
 
@@ -178,6 +178,11 @@ public:
     Node() = default;
     Node(QList<Polygon> polygons);
 
+    [[nodiscard]] auto plane() const { return m_plane; }
+    [[nodiscard]] auto polygons() const { return m_polygons; }
+    [[nodiscard]] auto front() const { return m_front; }
+    [[nodiscard]] auto back() const { return m_back; }
+
     /// Convert solid space to empty space and empty space to solid space.
     void invert();
     [[nodiscard]] Node inverted() const;
@@ -196,11 +201,6 @@ public:
     /// nodes there. Each set of polygons is partitioned using the first polygon
     /// (no heuristic is used to pick a good split).
     void build(QList<Polygon> polygons);
-
-    [[nodiscard]] auto plane() const { return m_plane; }
-    [[nodiscard]] auto polygons() const { return m_polygons; }
-    [[nodiscard]] auto front() const { return m_front; }
-    [[nodiscard]] auto back() const { return m_back; }
 
 private:
     Plane m_plane;
