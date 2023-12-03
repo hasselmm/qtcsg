@@ -19,7 +19,10 @@
 #include "qtcsgtest.h"
 
 #include <qtcsg/qtcsg.h>
+#include <qtcsg/qtcsgio.h>
 #include <qtcsg/qtcsgmath.h>
+
+#include <QDir>
 
 namespace QtCSG::Tests {
 
@@ -325,6 +328,47 @@ private slots:
         QCOMPARE(transformed.position(), expectedResult.position());
         QCOMPARE(transformed.normal(),   expectedResult.normal());
         QCOMPARE(transformed,            expectedResult);
+    }
+
+    void testCutOff_data()
+    {
+        QTest::addColumn<QString>("bodyFileName");
+        QTest::addColumn<QString>("cutOffFileName");
+        QTest::addColumn<int>    ("recursionLimit");
+
+        for (const auto dataDir = QDir{":/qtcsg/assets/cutoff"};
+             const auto &childInfo: dataDir.entryInfoList(QDir::Dirs, QDir::Name)) {
+            auto childDir = QDir{childInfo.filePath()};
+
+            QTest::addRow("%s/l", qUtf8Printable(childInfo.fileName()))
+                << childDir.filePath("body.off")
+                << childDir.filePath("left.off")
+                << 20;
+
+            QTest::addRow("%s/r", qUtf8Printable(childInfo.fileName()))
+                << childDir.filePath("body.off")
+                << childDir.filePath("right.off")
+                << 20;
+        }
+    }
+
+    void testCutOff()
+    {
+        const QFETCH(int,     recursionLimit);
+        const QFETCH(QString, bodyFileName);
+        const QFETCH(QString, cutOffFileName);
+
+        const auto body = readGeometry(bodyFileName);
+        QCOMPARE(body.error(), Error::NoError);
+
+        const auto cutOff = readGeometry(cutOffFileName);
+        QCOMPARE(cutOff.error(), Error::NoError);
+
+        QBENCHMARK {
+            const auto delta = subtract(body, cutOff, recursionLimit);
+            QCOMPARE(delta.error(), Error::NoError);
+            QVERIFY(!delta.isEmpty());
+        }
     }
 
     void testParseGeometry_data()

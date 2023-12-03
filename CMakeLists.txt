@@ -52,6 +52,7 @@ include(QtCSGBackports)
 add_subdirectory(qtcsg)
 add_subdirectory(qt3dcsg)
 
+add_subdirectory(assets)
 add_subdirectory(demo)
 add_subdirectory(tests)
 

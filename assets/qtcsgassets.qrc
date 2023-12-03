@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/qtcsg/assets">
+        <file>cutoff/BG3-R12/body.off</file>
+        <file>cutoff/BG3-R12/left.off</file>
+        <file>cutoff/BG3-R12/right.off</file>
+        <file>cutoff/BG5/body.off</file>
+        <file>cutoff/BG5/left.off</file>
+        <file>cutoff/BG5/right.off</file>
+        <file>cutoff/BR11-32/body.off</file>
+        <file>cutoff/BR11-32/left.off</file>
+        <file>cutoff/BR11-32/right.off</file>
+        <file>cutoff/BR12-22/body.off</file>
+        <file>cutoff/BR12-22/left.off</file>
+        <file>cutoff/BR12-22/right.off</file>
+        <file>cutoff/BR22/body.off</file>
+        <file>cutoff/BR22/left.off</file>
+        <file>cutoff/BR22/right.off</file>
+    </qresource>
+</RCC>
