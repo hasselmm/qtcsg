@@ -43,7 +43,9 @@ void Vertex::flip()
 
 Vertex Vertex::transformed(const QMatrix4x4 &matrix) const
 {
-    return Vertex{matrix * position(), matrix * normal()};
+    auto newPosition = matrix * position();
+    auto newNormal = findRotation(matrix) * normal(); // only rotate; do not translate, or scale
+    return Vertex{std::move(newPosition), std::move(newNormal)};
 }
 
 Vertex Vertex::interpolated(Vertex other, float t) const
