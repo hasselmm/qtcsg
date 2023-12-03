@@ -360,6 +360,7 @@ QtCSG::Geometry geometry(QGeometry *geometry, QMatrix4x4 transformation)
 
     if (position.isValid() && normal.isValid() && index.isValid()) {
         const auto count = index.attribute()->count();
+        polygons.reserve(count / 3);
 
         for (auto i = 0; i < count; i += 3) {
             const auto ia = index.at(i);
