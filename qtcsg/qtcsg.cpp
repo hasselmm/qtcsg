@@ -45,7 +45,7 @@ void Vertex::flip()
     m_normal = -m_normal;
 }
 
-Vertex Vertex::interpolate(Vertex other, float t) const
+Vertex Vertex::interpolated(Vertex other, float t) const
 {
     return Vertex{
         lerp(position(), other.position(), t),
@@ -146,7 +146,7 @@ void Polygon::split(const Plane &plane,
                   const auto t = (plane.w()
                                   - QVector3D::dotProduct(plane.normal(), vi.position()))
                                   / QVector3D::dotProduct(plane.normal(), vj.position() - vi.position());
-                  const auto v = vi.interpolate(vj, t);
+                  const auto v = vi.interpolated(vj, t);
 
                   f.append(v);
                   b.append(v);
@@ -300,7 +300,7 @@ Geometry merge(Geometry lhs, Geometry rhs)
     return {a.allPolygons()};
 }
 
-Geometry difference(Geometry lhs, Geometry rhs)
+Geometry subtract(Geometry lhs, Geometry rhs)
 {
     auto a = Node{lhs.polygons()};
     auto b = Node{rhs.polygons()};

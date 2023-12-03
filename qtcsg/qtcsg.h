@@ -55,7 +55,7 @@ public:
     /// Create a new vertex between this vertex and `other` by linearly
     /// interpolating all properties using a parameter of `t`. Subclasses should
     /// override this to interpolate additional properties.
-    Vertex interpolate(Vertex other, float t) const;
+    Vertex interpolated(Vertex other, float t) const;
 
     auto fields() const { return std::tie(m_position, m_normal); }
     bool operator==(const Vertex &rhs) const { return fields() == rhs.fields(); }
@@ -147,7 +147,7 @@ private:
 Polygon operator*(const QMatrix4x4 &, const Polygon &);
 
 /// Holds a binary space partition tree representing a 3D solid. Two solids can
-/// be combined using the `union()`, `subtract()`, and `intersect()` methods.
+/// be combined using the `unite()`, `subtract()`, and `intersect()` methods.
 class Geometry
 {
 public:
@@ -229,7 +229,7 @@ Geometry cylinder(QVector3D center = {}, float height = 2, float radius = 1, flo
 /// Return a new CSG solid representing space in either this solid or in the
 /// solid `csg`. Neither this solid nor the solid `csg` are modified.
 ///
-///     A.union(B)
+///     A.unite(B)
 ///
 ///     +-------+            +-------+
 ///     |       |            |       |
@@ -241,7 +241,8 @@ Geometry cylinder(QVector3D center = {}, float height = 2, float radius = 1, flo
 ///          +-------+            +-------+
 ///
 Geometry merge(Geometry a, Geometry b);
-inline auto union_(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
+
+inline auto unite(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
 inline auto operator|(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
 
 /// Return a new CSG solid representing space in this solid but not in the
@@ -258,9 +259,10 @@ inline auto operator|(Geometry a, Geometry b) { return merge(std::move(a), std::
 ///          |       |
 ///          +-------+
 ///
-Geometry difference(Geometry a, Geometry b);
-inline auto substract(Geometry a, Geometry b) { return difference(std::move(a), std::move(b)); }
-inline auto operator-(Geometry a, Geometry b) { return difference(std::move(a), std::move(b)); }
+Geometry subtract(Geometry a, Geometry b);
+
+inline auto difference(Geometry a, Geometry b) { return subtract(std::move(a), std::move(b)); }
+inline auto operator-(Geometry a, Geometry b) { return subtract(std::move(a), std::move(b)); }
 
 /// Return a new CSG solid representing space both this solid and in the
 /// solid `csg`. Neither this solid nor the solid `csg` are modified.
@@ -277,6 +279,8 @@ inline auto operator-(Geometry a, Geometry b) { return difference(std::move(a), 
 ///          +-------+
 ///
 Geometry intersect(Geometry a, Geometry b);
+
+inline auto intersection(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
 inline auto operator&(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
 
 QDebug operator<<(QDebug debug, Geometry geometry);
