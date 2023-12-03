@@ -1,0 +1,16 @@
+foreach(module ${QT_MODULES})
+    if (NOT TARGET Qt::${module})
+        add_library(Qt::${module} ALIAS Qt${QT_VERSION_MAJOR}::${module})
+    endif()
+endforeach()
+
+# Very minimal backport of qt_add_executable for Qt
+if (NOT COMMAND qt_add_executable)
+    function(qt_add_executable NAME)
+        if (ANDROID)
+            add_library(${NAME} SHARED ${ARGN})
+        else()
+            add_executable(${NAME} ${ARGN})
+        endif()
+    endfunction()
+endif()

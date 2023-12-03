@@ -22,21 +22,7 @@ set(CMAKE_FIND_PACKAGE_SORT_ORDER NAME)
 set(QT_MODULES Core Gui Test Widgets 3DCore 3DExtras 3DRender)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS ${QT_MODULES})
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${QT_MODULES})
-
-foreach(module ${QT_MODULES})
-    add_library(Qt::${module} ALIAS Qt${QT_VERSION_MAJOR}::${module})
-endforeach()
-
-# Very minimal backport of qt_add_executable for Qt
-if (NOT COMMAND qt_add_executable)
-    function(qt_add_executable NAME)
-        if (ANDROID)
-            add_library(${NAME} SHARED ${ARGN})
-        else()
-            add_executable(${NAME} ${ARGN})
-        endif()
-    endfunction()
-endif()
+include(QtCSGBackports)
 
 add_subdirectory(qtcsg)
 add_subdirectory(qt3dcsg)
