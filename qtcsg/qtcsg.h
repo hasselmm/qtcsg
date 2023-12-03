@@ -159,6 +159,7 @@ public:
         : m_polygons{std::move(polygons)}
     {}
 
+    [[nodiscard]] auto isEmpty() const { return m_polygons.isEmpty(); }
     [[nodiscard]] auto polygons() const { return m_polygons; }
 
     /// Return a new CSG solid with solid and empty space switched.
