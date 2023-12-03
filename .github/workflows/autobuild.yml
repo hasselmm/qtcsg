@@ -32,12 +32,14 @@ jobs:
         with:
           ccache_options: |
             max_size=100M
-          override_cache_key: ccache-linux-clang-x86_64
+          override_cache_key: ccache-linux-gcc-x86_64
           update_packager_index: false
 
       - name: Configure project
         run: >
           mkdir build && cd build && cmake -GNinja
+          -DCMAKE_C_COMPILER:FILEPATH=/usr/bin/gcc
+          -DCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/g++
           -DCMAKE_MAKE_PROGRAM:FILEPATH=$IQTA_TOOLS/Ninja/ninja
           ..
 
