@@ -38,6 +38,9 @@ enum class Error
 {
     NoError,
     RecursionError,
+    NotSupportedError,
+    FileSystemError,
+    FileFormatError,
 };
 
 Q_ENUM_NS(Error)
@@ -166,7 +169,8 @@ private:
 class Geometry
 {
 public:
-    explicit Geometry() = default;
+    explicit Geometry(Error error = Error::NoError)
+        : m_error{error} {}
     explicit Geometry(QList<Polygon> polygons, Error error = Error::NoError)
         : m_polygons{std::move(polygons)}
         , m_error{error} {}
@@ -184,7 +188,7 @@ public:
 
 private:
     QList<Polygon> m_polygons;
-    Error m_error = Error::NoError;
+    Error m_error;
 };
 
 /// Holds a node in a BSP tree. A BSP tree is built from a collection of polygons
