@@ -57,6 +57,10 @@ public:
     /// override this to interpolate additional properties.
     Vertex interpolated(Vertex other, float t) const;
 
+    /// Returns a new vertex which has the transformations described
+    /// by `matrix` applied to the position and normal this vertex.
+    Vertex transformed(const QMatrix4x4 &matrix) const;
+
     auto fields() const { return std::tie(m_position, m_normal); }
     bool operator==(const Vertex &rhs) const { return fields() == rhs.fields(); }
 
@@ -66,11 +70,6 @@ private:
     QVector3D m_position;
     QVector3D m_normal;
 };
-
-inline Vertex operator*(const QMatrix4x4 &matrix, const Vertex &vertex)
-{
-    return Vertex{matrix * vertex.position(), matrix * vertex.normal()};
-}
 
 ///  Represents a plane in 3D space.
 class Plane
@@ -133,18 +132,18 @@ public:
                QList<Polygon> *front, QList<Polygon> *back,
                float epsilon = 1e-5) const;
 
+    /// Returns a new polygon which has the transformations described
+    /// by `matrix` applied to all vertices of this polygon.
+    Polygon transformed(const QMatrix4x4 &matrix) const;
+
     auto fields() const { return std::tie(m_vertices, m_shared, m_plane); }
     bool operator==(const Polygon &rhs) const { return fields() == rhs.fields(); }
 
 private:
-    friend Polygon operator*(const QMatrix4x4 &, const Polygon &);
-
     QList<Vertex> m_vertices;
     QVariant m_shared;
     Plane m_plane;
 };
-
-Polygon operator*(const QMatrix4x4 &, const Polygon &);
 
 /// Holds a binary space partition tree representing a 3D solid. Two solids can
 /// be combined using the `unite()`, `subtract()`, and `intersect()` methods.
@@ -160,13 +159,13 @@ public:
     /// Return a new CSG solid with solid and empty space switched.
     Geometry inverse() const;
 
-private:
-    friend Geometry operator*(const QMatrix4x4 &matrix, const Geometry &geometry);
+    /// Returns a new geometry which has the transformations described
+    /// by `matrix` applied to all the polygons of this geometry.
+    Geometry transformed(const QMatrix4x4 &matrix) const;
 
+private:
     QList<Polygon> m_polygons;
 };
-
-Geometry operator*(const QMatrix4x4 &matrix, const Geometry &geometry);
 
 /// Holds a node in a BSP tree. A BSP tree is built from a collection of polygons
 /// by picking a polygon to split along. That polygon (and all other coplanar
@@ -282,6 +281,10 @@ Geometry intersect(Geometry a, Geometry b);
 
 inline auto intersection(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
 inline auto operator&(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
+
+inline Vertex operator*(const QMatrix4x4 &m, const Vertex &v) { return v.transformed(m); }
+inline Polygon operator*(const QMatrix4x4 &m, const Polygon &p) { return p.transformed(m); }
+inline Geometry operator*(const QMatrix4x4 &m, const Geometry &g) { return g.transformed(m); }
 
 QDebug operator<<(QDebug debug, Geometry geometry);
 QDebug operator<<(QDebug debug, Plane plane);

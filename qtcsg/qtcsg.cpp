@@ -45,6 +45,11 @@ void Vertex::flip()
     m_normal = -m_normal;
 }
 
+Vertex Vertex::transformed(const QMatrix4x4 &matrix) const
+{
+    return Vertex{matrix * position(), matrix * normal()};
+}
+
 Vertex Vertex::interpolated(Vertex other, float t) const
 {
     return Vertex{
@@ -72,15 +77,17 @@ void Polygon::flip()
     m_plane.flip();
 }
 
-Polygon operator*(const QMatrix4x4 &matrix, const Polygon &polygon)
+Polygon Polygon::transformed(const QMatrix4x4 &matrix) const
 {
     auto transformed = QList<Vertex>{};
-    transformed.reserve(polygon.m_vertices.count());
+    transformed.reserve(m_vertices.count());
 
-    std::transform(polygon.m_vertices.cbegin(), polygon.m_vertices.cend(),
-                   std::back_inserter(transformed), [matrix](const Vertex &vertex) {
-        return matrix * vertex;
-    });
+    const auto applyMatrix = [matrix](const Vertex &vertex) {
+        return vertex.transformed(matrix);
+    };
+
+    std::transform(m_vertices.cbegin(), m_vertices.cend(),
+                   std::back_inserter(transformed), applyMatrix);
 
     return Polygon{std::move(transformed)};
 }
@@ -171,15 +178,17 @@ Geometry Geometry::inverse() const
     return {std::move(inverse)};
 }
 
-Geometry operator*(const QMatrix4x4 &matrix, const Geometry &geometry)
+Geometry Geometry::transformed(const QMatrix4x4 &matrix) const
 {
     auto transformed = QList<Polygon>{};
-    transformed.reserve(geometry.m_polygons.count());
+    transformed.reserve(m_polygons.count());
 
-    std::transform(geometry.m_polygons.cbegin(), geometry.m_polygons.cend(),
-                   std::back_inserter(transformed), [matrix](const auto &polygon) {
-        return matrix * polygon;
-    });
+    const auto applyMatrix = [matrix](const Polygon &polygon) {
+        return polygon.transformed(matrix);
+    };
+
+    std::transform(m_polygons.cbegin(), m_polygons.cend(),
+                   std::back_inserter(transformed), applyMatrix);
 
     return {std::move(transformed)};
 }
