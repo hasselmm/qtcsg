@@ -16,9 +16,9 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#include <qtcsg/qtcsg.h>
+#include "qtcsgtest.h"
 
-#include <QTest>
+#include <qtcsg/qtcsg.h>
 
 namespace QtCSG::Tests {
 
