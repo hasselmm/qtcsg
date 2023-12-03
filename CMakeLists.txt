@@ -24,8 +24,11 @@ set(CMAKE_FIND_PACKAGE_SORT_ORDER NAME)
 
 set(QT_MODULES Core Gui Test Widgets 3DCore 3DExtras 3DRender)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS ${QT_MODULES})
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${QT_MODULES})
-message(STATUS "Building for Qt ${QT_VERSION}")
+message(STATUS "Building for Qt ${QT_VERSION} from ${QT_DIR}")
+set(Qt${QT_VERSION_MAJOR}_DIR "${QT_DIR}")
+
+find_package(Qt${QT_VERSION_MAJOR} ${QT_VERSION} REQUIRED COMPONENTS ${QT_MODULES})
+
 include(QtCSGBackports)
 
 add_subdirectory(qtcsg)
