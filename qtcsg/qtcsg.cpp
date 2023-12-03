@@ -169,7 +169,7 @@ void Polygon::split(const Plane &plane,
     }
 }
 
-Geometry Geometry::inverse() const
+Geometry Geometry::inversed() const
 {
     auto inverse = QList<Polygon>{};
     inverse.reserve(m_polygons.size());

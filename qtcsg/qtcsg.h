@@ -45,8 +45,8 @@ public:
         , m_normal{std::move(normal)}
     {}
 
-    auto position() const { return m_position; }
-    auto normal() const { return m_normal; }
+    [[nodiscard]] auto position() const { return m_position; }
+    [[nodiscard]] auto normal() const { return m_normal; }
 
     /// Invert all orientation-specific data (e.g. vertex normal).
     /// Called when the orientation of a polygon is flipped.
@@ -55,14 +55,14 @@ public:
     /// Create a new vertex between this vertex and `other` by linearly
     /// interpolating all properties using a parameter of `t`. Subclasses should
     /// override this to interpolate additional properties.
-    Vertex interpolated(Vertex other, float t) const;
+    [[nodiscard]] Vertex interpolated(Vertex other, float t) const;
 
     /// Returns a new vertex which has the transformations described
     /// by `matrix` applied to the position and normal this vertex.
-    Vertex transformed(const QMatrix4x4 &matrix) const;
+    [[nodiscard]] Vertex transformed(const QMatrix4x4 &matrix) const;
 
-    auto fields() const { return std::tie(m_position, m_normal); }
-    bool operator==(const Vertex &rhs) const { return fields() == rhs.fields(); }
+    [[nodiscard]] auto fields() const { return std::tie(m_position, m_normal); }
+    [[nodiscard]] bool operator==(const Vertex &rhs) const { return fields() == rhs.fields(); }
 
 private:
     friend class Qt3DCSG::Geometry; // FIXME: Build a vertex type that's simple but also directly wraps Qt3D attributes
@@ -82,16 +82,16 @@ public:
         , m_w{w}
     {}
 
-    auto isNull() const { return m_normal.isNull(); }
-    auto normal() const { return m_normal; }
-    auto w() const { return m_w; }
+    [[nodiscard]] auto isNull() const { return m_normal.isNull(); }
+    [[nodiscard]] auto normal() const { return m_normal; }
+    [[nodiscard]] auto w() const { return m_w; }
 
-    static Plane fromPoints(QVector3D a, QVector3D b, QVector3D c);
+    [[nodiscard]] static Plane fromPoints(QVector3D a, QVector3D b, QVector3D c);
 
     void flip();
 
-    auto fields() const { return std::tie(m_normal, m_w); }
-    bool operator==(const Plane &rhs) const { return fields() == rhs.fields(); }
+    [[nodiscard]] auto fields() const { return std::tie(m_normal, m_w); }
+    [[nodiscard]] bool operator==(const Plane &rhs) const { return fields() == rhs.fields(); }
 
 private:
     QVector3D m_normal;
@@ -116,9 +116,9 @@ public:
                                     m_vertices[2].position())}
     {}
 
-    auto vertices() const { return m_vertices; }
-    auto shared() const { return m_shared; }
-    auto plane() const { return m_plane; }
+    [[nodiscard]] auto vertices() const { return m_vertices; }
+    [[nodiscard]] auto shared() const { return m_shared; }
+    [[nodiscard]] auto plane() const { return m_plane; }
 
     void flip();
 
@@ -134,10 +134,10 @@ public:
 
     /// Returns a new polygon which has the transformations described
     /// by `matrix` applied to all vertices of this polygon.
-    Polygon transformed(const QMatrix4x4 &matrix) const;
+    [[nodiscard]] Polygon transformed(const QMatrix4x4 &matrix) const;
 
-    auto fields() const { return std::tie(m_vertices, m_shared, m_plane); }
-    bool operator==(const Polygon &rhs) const { return fields() == rhs.fields(); }
+    [[nodiscard]] auto fields() const { return std::tie(m_vertices, m_shared, m_plane); }
+    [[nodiscard]] bool operator==(const Polygon &rhs) const { return fields() == rhs.fields(); }
 
 private:
     QList<Vertex> m_vertices;
@@ -154,14 +154,14 @@ public:
         : m_polygons{std::move(polygons)}
     {}
 
-    auto polygons() const { return m_polygons; }
+    [[nodiscard]] auto polygons() const { return m_polygons; }
 
     /// Return a new CSG solid with solid and empty space switched.
-    Geometry inverse() const;
+    [[nodiscard]] Geometry inversed() const;
 
     /// Returns a new geometry which has the transformations described
     /// by `matrix` applied to all the polygons of this geometry.
-    Geometry transformed(const QMatrix4x4 &matrix) const;
+    [[nodiscard]] Geometry transformed(const QMatrix4x4 &matrix) const;
 
 private:
     QList<Polygon> m_polygons;
@@ -180,16 +180,16 @@ public:
 
     /// Convert solid space to empty space and empty space to solid space.
     void invert();
-    Node inverted() const;
+    [[nodiscard]] Node inverted() const;
 
     /// Recursively remove all polygons in `polygons` that are inside this BSP tree.
-    QList<Polygon> clipPolygons(QList<Polygon> polygons) const;
+    [[nodiscard]] QList<Polygon> clipPolygons(QList<Polygon> polygons) const;
 
     /// Remove all polygons in this BSP tree that are inside the other BSP tree `bsp`.
     void clipTo(const Node &bsp);
 
     /// Return a list of all polygons in this BSP tree.
-    QList<Polygon> allPolygons() const;
+    [[nodiscard]] QList<Polygon> allPolygons() const;
 
     /// Build a BSP tree out of `polygons`. When called on an existing tree, the
     /// new polygons are filtered down to the bottom of the tree and become new
@@ -197,10 +197,10 @@ public:
     /// (no heuristic is used to pick a good split).
     void build(QList<Polygon> polygons);
 
-    auto plane() const { return m_plane; }
-    auto polygons() const { return m_polygons; }
-    auto front() const { return m_front; }
-    auto back() const { return m_back; }
+    [[nodiscard]] auto plane() const { return m_plane; }
+    [[nodiscard]] auto polygons() const { return m_polygons; }
+    [[nodiscard]] auto front() const { return m_front; }
+    [[nodiscard]] auto back() const { return m_back; }
 
 private:
     Plane m_plane;
@@ -212,18 +212,18 @@ private:
 };
 
 /// Construct an axis-aligned solid cuboid.
-Geometry cube(QVector3D center, QVector3D size);
-Geometry cube(QVector3D center = {}, float size = 1);
+[[nodiscard]] Geometry cube(QVector3D center, QVector3D size);
+[[nodiscard]] Geometry cube(QVector3D center = {}, float size = 1);
 
 /// Construct a solid sphere.
 /// The `slices` and `stacks` parameters control the tessellation along the
 /// longitude and latitude directions.
-Geometry sphere(QVector3D center = {}, float radius = 1, int slices = 16, int stacks = 8);
+[[nodiscard]] Geometry sphere(QVector3D center = {}, float radius = 1, int slices = 16, int stacks = 8);
 
 /// Construct a solid cylinder.
 /// The `slices` parameter controls the tessellation.
-Geometry cylinder(QVector3D start, QVector3D end, float radius = 1, float slices = 16);
-Geometry cylinder(QVector3D center = {}, float height = 2, float radius = 1, float slices = 16);
+[[nodiscard]] Geometry cylinder(QVector3D start, QVector3D end, float radius = 1, float slices = 16);
+[[nodiscard]] Geometry cylinder(QVector3D center = {}, float height = 2, float radius = 1, float slices = 16);
 
 /// Return a new CSG solid representing space in either this solid or in the
 /// solid `csg`. Neither this solid nor the solid `csg` are modified.
@@ -239,10 +239,10 @@ Geometry cylinder(QVector3D center = {}, float height = 2, float radius = 1, flo
 ///          |       |            |       |
 ///          +-------+            +-------+
 ///
-Geometry merge(Geometry a, Geometry b);
+[[nodiscard]] Geometry merge(Geometry a, Geometry b);
 
-inline auto unite(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
-inline auto operator|(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
+[[nodiscard]] inline auto unite(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
+[[nodiscard]] inline auto operator|(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
 
 /// Return a new CSG solid representing space in this solid but not in the
 /// solid `csg`. Neither this solid nor the solid `csg` are modified.
@@ -258,10 +258,10 @@ inline auto operator|(Geometry a, Geometry b) { return merge(std::move(a), std::
 ///          |       |
 ///          +-------+
 ///
-Geometry subtract(Geometry a, Geometry b);
+[[nodiscard]] Geometry subtract(Geometry a, Geometry b);
 
-inline auto difference(Geometry a, Geometry b) { return subtract(std::move(a), std::move(b)); }
-inline auto operator-(Geometry a, Geometry b) { return subtract(std::move(a), std::move(b)); }
+[[nodiscard]] inline auto difference(Geometry a, Geometry b) { return subtract(std::move(a), std::move(b)); }
+[[nodiscard]] inline auto operator-(Geometry a, Geometry b) { return subtract(std::move(a), std::move(b)); }
 
 /// Return a new CSG solid representing space both this solid and in the
 /// solid `csg`. Neither this solid nor the solid `csg` are modified.
@@ -277,14 +277,14 @@ inline auto operator-(Geometry a, Geometry b) { return subtract(std::move(a), st
 ///          |       |
 ///          +-------+
 ///
-Geometry intersect(Geometry a, Geometry b);
+[[nodiscard]] Geometry intersect(Geometry a, Geometry b);
 
-inline auto intersection(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
-inline auto operator&(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
+[[nodiscard]] inline auto intersection(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
+[[nodiscard]] inline auto operator&(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
 
-inline Vertex operator*(const QMatrix4x4 &m, const Vertex &v) { return v.transformed(m); }
-inline Polygon operator*(const QMatrix4x4 &m, const Polygon &p) { return p.transformed(m); }
-inline Geometry operator*(const QMatrix4x4 &m, const Geometry &g) { return g.transformed(m); }
+[[nodiscard]] inline Vertex operator*(const QMatrix4x4 &m, const Vertex &v) { return v.transformed(m); }
+[[nodiscard]] inline Polygon operator*(const QMatrix4x4 &m, const Polygon &p) { return p.transformed(m); }
+[[nodiscard]] inline Geometry operator*(const QMatrix4x4 &m, const Geometry &g) { return g.transformed(m); }
 
 QDebug operator<<(QDebug debug, Geometry geometry);
 QDebug operator<<(QDebug debug, Plane plane);
