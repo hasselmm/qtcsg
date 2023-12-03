@@ -7,8 +7,51 @@ on:
     branches: [ main ]
 
 jobs:
-  Build-on-Ubuntu:
-    name: "Build on Ubuntu"
+  Build-on-Ubuntu-Qt5:
+    name: "Build on Ubuntu for Qt5"
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.1.*'
+          version: '5.15.2'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'gcc_64'
+          tools: 'tools_ninja'
+          cache: true
+
+      - name: Set up compiler cache
+        uses: chocobo1/setup-ccache-action@v1
+        with:
+          ccache_options: |
+            max_size=100M
+          override_cache_key: ccache-linux-clang-x86_64
+          update_packager_index: false
+
+      - name: Configure project
+        run: >
+          mkdir build && cd build && cmake -GNinja
+          -DCMAKE_MAKE_PROGRAM:FILEPATH=$IQTA_TOOLS/Ninja/ninja
+          ..
+
+      - name: Build project
+        run: cd build && cmake --build . --target all -- -k0
+
+      - name: Test project
+        run: cd build && ctest --rerun-failed --output-on-failure
+        continue-on-error: true # remove once tests are expected to be stable
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+  Build-on-Ubuntu-Qt6:
+    name: "Build on Ubuntu for Qt6"
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
@@ -53,8 +96,8 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
 
-  Build-on-Windows:
-    name: "Build on Windows"
+  Build-on-Windows-Qt6:
+    name: "Build on Windows for Qt6"
     runs-on: windows-2022
     steps:
       - name: Checkout repository
