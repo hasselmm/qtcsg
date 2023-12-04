@@ -360,6 +360,7 @@ QtCSG::Geometry geometry(QGeometry *geometry, QMatrix4x4 transformation)
 
     if (position.isValid() && normal.isValid() && index.isValid()) {
         const auto count = index.attribute()->count();
+        polygons.reserve(count / 3);
 
         for (auto i = 0; i < count; i += 3) {
             const auto ia = index.at(i);
@@ -398,7 +399,13 @@ QtCSG::Geometry geometry(QGeometryRenderer *renderer, QMatrix4x4 transformation)
         return QtCSG::Geometry{{}};
     }
 
-    return geometry(renderer->view(), std::move(transformation));
+    if (const auto geometry = renderer->geometry())
+        return Qt3DCSG::geometry(geometry, std::move(transformation));
+    if (const auto view = renderer->view())
+        return Qt3DCSG::geometry(view, std::move(transformation));
+
+    qCWarning(lcGeometry, "Unsupported renderer without geometry or view");
+    return QtCSG::Geometry{{}};
 }
 
 QtCSG::Geometry geometry(Qt3DCore::QGeometryView *view, QMatrix4x4 transformation)
@@ -408,7 +415,11 @@ QtCSG::Geometry geometry(Qt3DCore::QGeometryView *view, QMatrix4x4 transformatio
         return QtCSG::Geometry{{}};
     }
 
-    return geometry(view->geometry(), std::move(transformation));
+    if (const auto geometry = view->geometry())
+        return Qt3DCSG::geometry(geometry, std::move(transformation));
+
+    qCWarning(lcGeometry, "Unsupported view without geometry");
+    return QtCSG::Geometry{{}};
 }
 
 #endif
