@@ -305,9 +305,9 @@ Geometry merge(Geometry lhs, Geometry rhs, int limit)
     b.clipTo(a);
     b.invert();
 
-    a.build(b.allPolygons(), limit);
+    const auto error = a.build(b.allPolygons(), limit);
 
-    return {a.allPolygons()};
+    return {a.allPolygons(), error};
 }
 
 Geometry subtract(Geometry lhs, Geometry rhs, int limit)
@@ -322,10 +322,11 @@ Geometry subtract(Geometry lhs, Geometry rhs, int limit)
     b.clipTo(a);
     b.invert();
 
-    a.build(b.allPolygons(), limit);
+    const auto error = a.build(b.allPolygons(), limit);
+
     a.invert();
 
-    return {a.allPolygons()};
+    return {a.allPolygons(), error};
 }
 
 Geometry intersect(Geometry lhs, Geometry rhs, int limit)
@@ -339,10 +340,11 @@ Geometry intersect(Geometry lhs, Geometry rhs, int limit)
     a.clipTo(b);
     b.clipTo(a);
 
-    a.build(b.allPolygons(), limit);
+    const auto error = a.build(b.allPolygons(), limit);
+
     a.invert();
 
-    return {a.allPolygons()};
+    return {a.allPolygons(), error};
 }
 
 Node::Node(QList<Polygon> polygons, int limit)
@@ -415,19 +417,20 @@ QList<Polygon> Node::allPolygons() const
     return polygons;
 }
 
-bool Node::build(QList<Polygon> polygons, int level, int limit)
+Error Node::build(QList<Polygon> polygons, int level, int limit)
 {
     if (level == limit) {
         qWarning(lcNode, "Maximum recursion level reached");
-        return false;
+        return Error::RecursionError;
     }
 
     if (polygons.isEmpty())
-        return true;
+        return Error::NoError;
 
     if (m_plane.isNull())
         m_plane = polygons.first().plane();
 
+    auto result = Error::NoError;
     auto front = QList<Polygon>{};
     auto back = QList<Polygon>{};
 
@@ -438,19 +441,21 @@ bool Node::build(QList<Polygon> polygons, int level, int limit)
         if (!m_front)
             m_front = std::make_shared<Node>();
 
-        if (!m_front->build(std::move(front), level + 1, limit))
-            return false;
+        if (const auto error = m_front->build(std::move(front), level + 1, limit);
+            error != Error::NoError && result == Error::NoError)
+            result = error;
     }
 
     if (!back.empty()) {
         if (!m_back)
             m_back = std::make_shared<Node>();
 
-        if (!m_back->build(std::move(back), level + 1, limit))
-            return false;
+        if (const auto error = m_back->build(std::move(back), level + 1, limit);
+            error != Error::NoError && result == Error::NoError)
+            result = error;
     }
 
-    return true;
+    return result;
 }
 
 
