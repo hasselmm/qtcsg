@@ -19,7 +19,7 @@
 #include "qtcsg.h"
 #include "qtcsgmath.h"
 
-#include <QDebug>
+#include <QLoggingCategory>
 
 #include <QMatrix4x4>
 #include <cmath>
@@ -27,6 +27,8 @@
 namespace QtCSG {
 
 namespace {
+
+Q_LOGGING_CATEGORY(lcNode, "qtcsg.io");
 
 template<class T>
 void flip(T &o)
@@ -292,7 +294,7 @@ Geometry cylinder(QVector3D center, float height, float radius, float slices)
                     radius, slices);
 }
 
-Geometry merge(Geometry lhs, Geometry rhs)
+Geometry merge(Geometry lhs, Geometry rhs, int limit)
 {
     auto a = Node{lhs.polygons()};
     auto b = Node{rhs.polygons()};
@@ -303,12 +305,12 @@ Geometry merge(Geometry lhs, Geometry rhs)
     b.clipTo(a);
     b.invert();
 
-    a.build(b.allPolygons());
+    const auto error = a.build(b.allPolygons(), limit);
 
-    return {a.allPolygons()};
+    return {a.allPolygons(), error};
 }
 
-Geometry subtract(Geometry lhs, Geometry rhs)
+Geometry subtract(Geometry lhs, Geometry rhs, int limit)
 {
     auto a = Node{lhs.polygons()};
     auto b = Node{rhs.polygons()};
@@ -320,13 +322,14 @@ Geometry subtract(Geometry lhs, Geometry rhs)
     b.clipTo(a);
     b.invert();
 
-    a.build(b.allPolygons());
+    const auto error = a.build(b.allPolygons(), limit);
+
     a.invert();
 
-    return {a.allPolygons()};
+    return {a.allPolygons(), error};
 }
 
-Geometry intersect(Geometry lhs, Geometry rhs)
+Geometry intersect(Geometry lhs, Geometry rhs, int limit)
 {
     auto a = Node{lhs.polygons()};
     auto b = Node{rhs.polygons()};
@@ -337,15 +340,16 @@ Geometry intersect(Geometry lhs, Geometry rhs)
     a.clipTo(b);
     b.clipTo(a);
 
-    a.build(b.allPolygons());
+    const auto error = a.build(b.allPolygons(), limit);
+
     a.invert();
 
-    return {a.allPolygons()};
+    return {a.allPolygons(), error};
 }
 
-Node::Node(QList<Polygon> polygons)
+Node::Node(QList<Polygon> polygons, int limit)
 {
-    build(std::move(polygons));
+    build(std::move(polygons), limit);
 }
 
 void Node::invert()
@@ -413,14 +417,20 @@ QList<Polygon> Node::allPolygons() const
     return polygons;
 }
 
-void Node::build(QList<Polygon> polygons)
+Error Node::build(QList<Polygon> polygons, int level, int limit)
 {
+    if (level == limit) {
+        qWarning(lcNode, "Maximum recursion level reached");
+        return Error::RecursionError;
+    }
+
     if (polygons.isEmpty())
-        return;
+        return Error::NoError;
 
     if (m_plane.isNull())
         m_plane = polygons.first().plane();
 
+    auto result = Error::NoError;
     auto front = QList<Polygon>{};
     auto back = QList<Polygon>{};
 
@@ -431,15 +441,21 @@ void Node::build(QList<Polygon> polygons)
         if (!m_front)
             m_front = std::make_shared<Node>();
 
-        m_front->build(std::move(front));
+        if (const auto error = m_front->build(std::move(front), level + 1, limit);
+            error != Error::NoError && result == Error::NoError)
+            result = error;
     }
 
     if (!back.empty()) {
         if (!m_back)
             m_back = std::make_shared<Node>();
 
-        m_back->build(std::move(back));
+        if (const auto error = m_back->build(std::move(back), level + 1, limit);
+            error != Error::NoError && result == Error::NoError)
+            result = error;
     }
+
+    return result;
 }
 
 

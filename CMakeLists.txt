@@ -15,6 +15,7 @@ list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 add_compile_definitions(QT_DISABLE_DEPRECATED_BEFORE=0x050f00)
 add_compile_options(-Werror=switch -Werror=unused)
 
+include(QtCSGDebug)
 include(QtCSGEnableAlternateLinker)
 qtcsg_enable_alternate_linker()
 
