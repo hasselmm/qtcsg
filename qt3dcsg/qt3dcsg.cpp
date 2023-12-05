@@ -23,7 +23,7 @@
 #include <QFloat16>
 #include <QLoggingCategory>
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION_MAJOR < 6
 #include <Qt3DRender/QAttribute>
 #include <Qt3DRender/QBuffer>
 #include <Qt3DRender/QBufferDataGenerator>
@@ -34,7 +34,7 @@
 
 namespace Qt3DCSG {
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION_MAJOR < 6
 using Qt3DRender::QAttribute;
 using Qt3DRender::QBuffer;
 #else
@@ -65,7 +65,7 @@ QByteArray data(const QBuffer *buffer)
 {
     auto data = buffer->data();
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION_MAJOR < 6
     if (data.isEmpty()) {
         QT_WARNING_PUSH
         QT_WARNING_DISABLE_DEPRECATED // generators are deprecated in Qt 5.15, still they get used by Qt3DExtras
@@ -378,7 +378,7 @@ QtCSG::Geometry geometry(QGeometry *geometry, QMatrix4x4 transformation)
     return QtCSG::Geometry{std::move(polygons)};
 }
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION_MAJOR < 6
 
 QtCSG::Geometry geometry(QGeometryRenderer *renderer, QMatrix4x4 transformation)
 {
