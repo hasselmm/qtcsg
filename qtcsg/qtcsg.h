@@ -30,6 +30,18 @@ class Geometry;
 
 namespace QtCSG {
 
+Q_NAMESPACE
+
+constexpr auto defaultRecursionLimit() { return 64; }
+
+enum class Error
+{
+    NoError,
+    RecursionError,
+};
+
+Q_ENUM_NS(Error)
+
 /// Represents a vertex of a polygon. Use your own vertex class instead of this
 /// one to provide additional features like texture coordinates and vertex
 /// colors. Custom vertex classes need to provide a `pos` property and `clone()`,
@@ -155,12 +167,14 @@ class Geometry
 {
 public:
     Geometry() = default;
-    Geometry(QList<Polygon> polygons)
+    Geometry(QList<Polygon> polygons, Error error = Error::NoError)
         : m_polygons{std::move(polygons)}
+        , m_error{error}
     {}
 
     [[nodiscard]] auto isEmpty() const { return m_polygons.isEmpty(); }
     [[nodiscard]] auto polygons() const { return m_polygons; }
+    [[nodiscard]] Error error() const { return m_error; }
 
     /// Return a new CSG solid with solid and empty space switched.
     [[nodiscard]] Geometry inversed() const;
@@ -171,6 +185,7 @@ public:
 
 private:
     QList<Polygon> m_polygons;
+    Error m_error = Error::NoError;
 };
 
 /// Holds a node in a BSP tree. A BSP tree is built from a collection of polygons
@@ -182,7 +197,7 @@ class Node
 {
 public:
     Node() = default;
-    Node(QList<Polygon> polygons);
+    Node(QList<Polygon> polygons, int limit = defaultRecursionLimit());
 
     [[nodiscard]] auto plane() const { return m_plane; }
     [[nodiscard]] auto polygons() const { return m_polygons; }
@@ -206,9 +221,14 @@ public:
     /// new polygons are filtered down to the bottom of the tree and become new
     /// nodes there. Each set of polygons is partitioned using the first polygon
     /// (no heuristic is used to pick a good split).
-    void build(QList<Polygon> polygons);
+    Error build(QList<Polygon> polygons, int limit = defaultRecursionLimit())
+    {
+        return build(std::move(polygons), 0, limit);
+    }
 
 private:
+    [[nodiscard]] Error build(QList<Polygon> polygons, int level, int limit);
+
     Plane m_plane;
 
     QList<Polygon> m_polygons;
@@ -245,7 +265,7 @@ private:
 ///          |       |            |       |
 ///          +-------+            +-------+
 ///
-[[nodiscard]] Geometry merge(Geometry a, Geometry b);
+[[nodiscard]] Geometry merge(Geometry a, Geometry b, int limit = defaultRecursionLimit());
 
 [[nodiscard]] inline auto unite(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
 [[nodiscard]] inline auto operator|(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
@@ -264,7 +284,7 @@ private:
 ///          |       |
 ///          +-------+
 ///
-[[nodiscard]] Geometry subtract(Geometry a, Geometry b);
+[[nodiscard]] Geometry subtract(Geometry a, Geometry b, int limit = defaultRecursionLimit());
 
 [[nodiscard]] inline auto difference(Geometry a, Geometry b) { return subtract(std::move(a), std::move(b)); }
 [[nodiscard]] inline auto operator-(Geometry a, Geometry b) { return subtract(std::move(a), std::move(b)); }
@@ -283,7 +303,7 @@ private:
 ///          |       |
 ///          +-------+
 ///
-[[nodiscard]] Geometry intersect(Geometry a, Geometry b);
+[[nodiscard]] Geometry intersect(Geometry a, Geometry b, int limit = defaultRecursionLimit());
 
 [[nodiscard]] inline auto intersection(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
 [[nodiscard]] inline auto operator&(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
