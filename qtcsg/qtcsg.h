@@ -30,7 +30,17 @@ class Geometry;
 
 namespace QtCSG {
 
+Q_NAMESPACE
+
 constexpr auto defaultRecursionLimit() { return 64; }
+
+enum class Error
+{
+    NoError,
+    RecursionError,
+};
+
+Q_ENUM_NS(Error)
 
 /// Represents a vertex of a polygon. Use your own vertex class instead of this
 /// one to provide additional features like texture coordinates and vertex
@@ -157,12 +167,14 @@ class Geometry
 {
 public:
     Geometry() = default;
-    Geometry(QList<Polygon> polygons)
+    Geometry(QList<Polygon> polygons, Error error = Error::NoError)
         : m_polygons{std::move(polygons)}
+        , m_error{error}
     {}
 
     [[nodiscard]] auto isEmpty() const { return m_polygons.isEmpty(); }
     [[nodiscard]] auto polygons() const { return m_polygons; }
+    [[nodiscard]] Error error() const { return m_error; }
 
     /// Return a new CSG solid with solid and empty space switched.
     [[nodiscard]] Geometry inversed() const;
@@ -173,6 +185,7 @@ public:
 
 private:
     QList<Polygon> m_polygons;
+    Error m_error = Error::NoError;
 };
 
 /// Holds a node in a BSP tree. A BSP tree is built from a collection of polygons
@@ -208,13 +221,13 @@ public:
     /// new polygons are filtered down to the bottom of the tree and become new
     /// nodes there. Each set of polygons is partitioned using the first polygon
     /// (no heuristic is used to pick a good split).
-    bool build(QList<Polygon> polygons, int limit = defaultRecursionLimit())
+    Error build(QList<Polygon> polygons, int limit = defaultRecursionLimit())
     {
         return build(std::move(polygons), 0, limit);
     }
 
 private:
-    [[nodiscard]] bool build(QList<Polygon> polygons, int level, int limit);
+    [[nodiscard]] Error build(QList<Polygon> polygons, int level, int limit);
 
     Plane m_plane;
 
