@@ -176,7 +176,7 @@ Geometry Geometry::inversed() const
     inverse.reserve(m_polygons.size());
     std::copy(m_polygons.begin(), m_polygons.end(), std::back_inserter(inverse));
     std::for_each(inverse.begin(), inverse.end(), &flip<Polygon>);
-    return {std::move(inverse)};
+    return Geometry{std::move(inverse)};
 }
 
 Geometry Geometry::transformed(const QMatrix4x4 &matrix) const
@@ -191,7 +191,7 @@ Geometry Geometry::transformed(const QMatrix4x4 &matrix) const
     std::transform(m_polygons.cbegin(), m_polygons.cend(),
                    std::back_inserter(transformed), applyMatrix);
 
-    return {std::move(transformed)};
+    return Geometry{std::move(transformed)};
 }
 
 Geometry cube(QVector3D center, QVector3D size)
@@ -307,7 +307,7 @@ Geometry merge(Geometry lhs, Geometry rhs, int limit)
 
     const auto error = a.build(b.allPolygons(), limit);
 
-    return {a.allPolygons(), error};
+    return Geometry{a.allPolygons(), error};
 }
 
 Geometry subtract(Geometry lhs, Geometry rhs, int limit)
@@ -326,7 +326,7 @@ Geometry subtract(Geometry lhs, Geometry rhs, int limit)
 
     a.invert();
 
-    return {a.allPolygons(), error};
+    return Geometry{a.allPolygons(), error};
 }
 
 Geometry intersect(Geometry lhs, Geometry rhs, int limit)
@@ -344,7 +344,7 @@ Geometry intersect(Geometry lhs, Geometry rhs, int limit)
 
     a.invert();
 
-    return {a.allPolygons(), error};
+    return Geometry{a.allPolygons(), error};
 }
 
 Node::Node(QList<Polygon> polygons, int limit)
