@@ -166,11 +166,10 @@ private:
 class Geometry
 {
 public:
-    Geometry() = default;
-    Geometry(QList<Polygon> polygons, Error error = Error::NoError)
+    explicit Geometry() = default;
+    explicit Geometry(QList<Polygon> polygons, Error error = Error::NoError)
         : m_polygons{std::move(polygons)}
-        , m_error{error}
-    {}
+        , m_error{error} {}
 
     [[nodiscard]] auto isEmpty() const { return m_polygons.isEmpty(); }
     [[nodiscard]] auto polygons() const { return m_polygons; }
