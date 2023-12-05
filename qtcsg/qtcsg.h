@@ -38,6 +38,7 @@ enum class Error
 {
     NoError,
     RecursionError,
+    ConvexityError,
     NotSupportedError,
     FileSystemError,
     FileFormatError,
@@ -142,6 +143,8 @@ public:
     [[nodiscard]] auto shared() const { return m_shared; }
     [[nodiscard]] auto plane() const { return m_plane; }
 
+    [[nodiscard]] bool isConvex() const;
+
     void flip();
 
     /// Split this polygon by `plane` if needed, then put the polygon or polygon
@@ -176,7 +179,9 @@ public:
         : m_error{error} {}
     explicit Geometry(QList<Polygon> polygons, Error error = Error::NoError)
         : m_polygons{std::move(polygons)}
-        , m_error{error} {}
+        , m_error{error} {
+        validate();
+    }
 
     [[nodiscard]] auto isEmpty() const { return m_polygons.isEmpty(); }
     [[nodiscard]] auto polygons() const { return m_polygons; }
@@ -190,6 +195,8 @@ public:
     [[nodiscard]] Geometry transformed(const QMatrix4x4 &matrix) const;
 
 private:
+    void validate();
+
     QList<Polygon> m_polygons;
     Error m_error;
 };

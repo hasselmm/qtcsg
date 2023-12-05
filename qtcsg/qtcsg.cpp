@@ -41,6 +41,17 @@ void flip(T &o)
     o.flip();
 }
 
+[[nodiscard]] constexpr bool isConvexPoint(const QVector3D &a,
+                                           const QVector3D &b,
+                                           const QVector3D &c,
+                                           const QVector3D &normal,
+                                           float epsilon = 0)
+{
+    const auto cross = QVector3D::crossProduct(b - a, c - b);
+    const auto d = QVector3D::dotProduct(cross, normal);
+    return d >= epsilon;
+}
+
 } // namespace
 
 void Vertex::flip()
@@ -73,6 +84,25 @@ void Plane::flip()
 {
     m_normal = -m_normal;
     m_w = -m_w;
+}
+
+bool Polygon::isConvex() const
+{
+    if (m_vertices.size() < 3)
+        return true;
+
+    const auto planeNormal = m_plane.normal();
+
+    for (auto i = m_vertices.size() - 2, j = m_vertices.size() - 1, k = qsizetype{0};
+         k < m_vertices.size(); i = j, j = k, ++k) {
+        if (!isConvexPoint(m_vertices[i].position(),
+                           m_vertices[j].position(),
+                           m_vertices[k].position(),
+                           planeNormal))
+            return false;
+    }
+
+    return true;
 }
 
 void Polygon::flip()
@@ -197,6 +227,19 @@ Geometry Geometry::transformed(const QMatrix4x4 &matrix) const
                    std::back_inserter(transformed), applyMatrix);
 
     return Geometry{std::move(transformed)};
+}
+
+void Geometry::validate()
+{
+    if (m_error != Error::NoError)
+        return;
+
+    for (const auto &p: std::as_const(m_polygons)) {
+        if (!p.isConvex()) {
+            m_error = Error::ConvexityError;
+            break;
+        }
+    }
 }
 
 namespace {
