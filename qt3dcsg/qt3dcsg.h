@@ -28,7 +28,7 @@ class Geometry;
 
 namespace Qt3DCSG {
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION_MAJOR < 6
 using Qt3DRender::QGeometry;
 using Qt3DRender::QGeometryRenderer;
 #else
@@ -60,7 +60,7 @@ public:
 QtCSG::Geometry geometry(QGeometry *geometry, QMatrix4x4 transformation = {});
 QtCSG::Geometry geometry(QGeometryRenderer *renderer, QMatrix4x4 transformation = {});
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION_MAJOR >= 6
 QtCSG::Geometry geometry(QGeometryView *view, QMatrix4x4 transformation = {});
 #endif
 

@@ -322,7 +322,7 @@ int Application::run()
 
 void Application::staticInit()
 {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#if QT_VERSION_MAJOR < 6
     setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 }
