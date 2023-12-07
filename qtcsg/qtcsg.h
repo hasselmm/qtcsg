@@ -200,7 +200,9 @@ class Node
 {
 public:
     Node() = default;
-    Node(QList<Polygon> polygons, int limit = defaultRecursionLimit());
+
+    static std::variant<Node, Error> fromPolygons(QList<Polygon> polygons,
+                                                  int limit = defaultRecursionLimit());
 
     [[nodiscard]] auto plane() const { return m_plane; }
     [[nodiscard]] auto polygons() const { return m_polygons; }
