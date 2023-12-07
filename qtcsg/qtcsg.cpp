@@ -296,8 +296,13 @@ Geometry cylinder(QVector3D center, float height, float radius, float slices)
 
 Geometry merge(Geometry lhs, Geometry rhs, int limit)
 {
-    auto a = Node{lhs.polygons()};
-    auto b = Node{rhs.polygons()};
+    auto a = Node{};
+    auto b = Node{};
+
+    if (const auto error = a.build(lhs.polygons(), limit); error != Error::NoError)
+        return Geometry{error};
+    if (const auto error = b.build(rhs.polygons(), limit); error != Error::NoError)
+        return Geometry{error};
 
     a.clipTo(b);
     b.clipTo(a);
@@ -305,15 +310,21 @@ Geometry merge(Geometry lhs, Geometry rhs, int limit)
     b.clipTo(a);
     b.invert();
 
-    const auto error = a.build(b.allPolygons(), limit);
+    if (const auto error = a.build(b.allPolygons(), limit); error != Error::NoError)
+        return Geometry{error};
 
-    return Geometry{a.allPolygons(), error};
+    return Geometry{a.allPolygons()};
 }
 
 Geometry subtract(Geometry lhs, Geometry rhs, int limit)
 {
-    auto a = Node{lhs.polygons()};
-    auto b = Node{rhs.polygons()};
+    auto a = Node{};
+    auto b = Node{};
+
+    if (const auto error = a.build(lhs.polygons(), limit); error != Error::NoError)
+        return Geometry{error};
+    if (const auto error = b.build(rhs.polygons(), limit); error != Error::NoError)
+        return Geometry{error};
 
     a.invert();
     a.clipTo(b);
@@ -322,17 +333,23 @@ Geometry subtract(Geometry lhs, Geometry rhs, int limit)
     b.clipTo(a);
     b.invert();
 
-    const auto error = a.build(b.allPolygons(), limit);
+    if (const auto error = a.build(b.allPolygons(), limit); error != Error::NoError)
+        return Geometry{error};
 
     a.invert();
 
-    return Geometry{a.allPolygons(), error};
+    return Geometry{a.allPolygons()};
 }
 
 Geometry intersect(Geometry lhs, Geometry rhs, int limit)
 {
-    auto a = Node{lhs.polygons()};
-    auto b = Node{rhs.polygons()};
+    auto a = Node{};
+    auto b = Node{};
+
+    if (const auto error = a.build(lhs.polygons(), limit); error != Error::NoError)
+        return Geometry{error};
+    if (const auto error = b.build(rhs.polygons(), limit); error != Error::NoError)
+        return Geometry{error};
 
     a.invert();
     b.clipTo(a);
@@ -340,16 +357,22 @@ Geometry intersect(Geometry lhs, Geometry rhs, int limit)
     a.clipTo(b);
     b.clipTo(a);
 
-    const auto error = a.build(b.allPolygons(), limit);
+    if (const auto error = a.build(b.allPolygons(), limit); error != Error::NoError)
+        return Geometry{error};
 
     a.invert();
 
-    return Geometry{a.allPolygons(), error};
+    return Geometry{a.allPolygons()};
 }
 
-Node::Node(QList<Polygon> polygons, int limit)
+std::variant<Node, Error> Node::fromPolygons(QList<Polygon> polygons, int limit)
 {
-    build(std::move(polygons), limit);
+    auto node = Node{};
+
+    if (const auto error = node.build(std::move(polygons), limit); error != Error::NoError)
+        return {error};
+
+    return {std::move(node)};
 }
 
 void Node::invert()

@@ -120,7 +120,13 @@ private slots:
     void testNodeConstruct()
     {
         const auto expectedNormal = QVector3D{-1, 0, 0};
-        const auto node = Node{cube().polygons()};
+        const auto maybeNode = Node::fromPolygons(cube().polygons());
+
+        if (std::holds_alternative<Error>(maybeNode))
+            QCOMPARE(std::get<Error>(maybeNode), Error::NoError);
+
+        QVERIFY(std::holds_alternative<Node>(maybeNode));
+        const auto node = std::get<Node>(maybeNode);
 
         {
             auto depth = 0;
@@ -149,7 +155,13 @@ private slots:
     void testNodeInvert()
     {
         const auto expectedNormal = QVector3D{1, 0, 0};
-        const auto node = Node{cube().polygons()}.inverted();
+        const auto maybeNode = Node::fromPolygons(cube().polygons());
+
+        if (std::holds_alternative<Error>(maybeNode))
+            QCOMPARE(std::get<Error>(maybeNode), Error::NoError);
+
+        QVERIFY(std::holds_alternative<Node>(maybeNode));
+        const auto node = std::get<Node>(maybeNode);
 
         {
             auto depth = 0;
