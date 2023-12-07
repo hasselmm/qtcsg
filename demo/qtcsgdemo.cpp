@@ -291,6 +291,7 @@ int Application::run()
     const auto layout = new QVBoxLayout{window};
     layout->addWidget(container, 1);
     layout->addLayout(buttons);
+    container->setFocus();
 
     const auto windowSize = QSize{1200, 800};
     const auto position = toPoint((screenSize - windowSize) / 2);
