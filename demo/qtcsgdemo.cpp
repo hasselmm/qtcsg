@@ -40,7 +40,7 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QWidget>
 
-namespace {
+namespace QtCSG::Demo {
 
 using Qt3DCore::QEntity;
 using Qt3DRender::QGeometryRenderer;
@@ -331,5 +331,5 @@ void Application::staticInit()
 
 int main(int argc, char *argv[])
 {
-    return Application{argc, argv}.run();
+    return QtCSG::Demo::Application{argc, argv}.run();
 }
