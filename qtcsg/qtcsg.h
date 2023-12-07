@@ -32,7 +32,7 @@ namespace QtCSG {
 
 Q_NAMESPACE
 
-constexpr auto defaultRecursionLimit() { return 64; }
+constexpr auto defaultRecursionLimit() { return 1024; }
 
 enum class Error
 {
