@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include <qtcsg/qtcsg.h>
+#include <qtcsg/qtcsgmath.h>
 #include <qt3dcsg/qt3dcsg.h>
 
 #include <Qt3DCore/QTransform>
@@ -59,30 +60,6 @@ const auto s_colors = std::array {
 QPoint toPoint(QSize size)
 {
     return {size.width(), size.height()};
-}
-
-template<typename... Args>
-QMatrix4x4 translation(Args... args)
-{
-    auto matrix = QMatrix4x4{};
-    matrix.translate(args...);
-    return matrix;
-}
-
-template<typename... Args>
-QMatrix4x4 rotation(Args... args)
-{
-    auto matrix = QMatrix4x4{};
-    matrix.rotate(args...);
-    return matrix;
-}
-
-template<typename... Args>
-QMatrix4x4 scale(Args... args)
-{
-    auto matrix = QMatrix4x4{};
-    matrix.scale(args...);
-    return matrix;
 }
 
 // convenience function to create Qt3D entities from geometry renderers

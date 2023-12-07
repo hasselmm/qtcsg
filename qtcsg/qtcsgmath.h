@@ -29,31 +29,43 @@ namespace QtCSG {
     return a + (b - a) * t;
 }
 
-[[nodiscard]] inline QMatrix4x4 identity()
+[[nodiscard]] inline auto identity()
 {
     return QMatrix4x4{};
 }
 
-[[nodiscard]] inline QMatrix4x4 scaled(const QVector3D &scale)
+template<typename... Args>
+[[nodiscard]] inline auto translation(Args... translation)
 {
     auto matrix = QMatrix4x4{};
-    matrix.scale(scale);
+    matrix.translate(std::forward<Args>(translation)...);
     return matrix;
 }
 
-[[nodiscard]] inline QMatrix4x4 translated(const QVector3D &translation)
+template<typename... Args>
+[[nodiscard]] inline auto rotation(Args... rotation)
 {
     auto matrix = QMatrix4x4{};
-    matrix.translate(translation);
+    matrix.rotate(std::forward<Args>(rotation)...);
     return matrix;
 }
 
-[[nodiscard]] inline QMatrix4x4 rotated(float angle, const QVector3D &axis)
+template<typename... Args>
+[[nodiscard]] inline auto scale(Args... scale)
 {
     auto matrix = QMatrix4x4{};
-    matrix.rotate(angle, axis);
+    matrix.scale(std::forward<Args>(scale)...);
     return matrix;
 }
+
+[[nodiscard]] inline auto translation(QVector3D vector)
+{ return translation<QVector3D>(std::move(vector)); }
+
+[[nodiscard]] inline auto rotation(float angle, QVector3D axis)
+{ return rotation<float, QVector3D>(angle, std::move(axis)); }
+
+[[nodiscard]] inline auto scale(QVector3D vector)
+{ return scale<QVector3D>(std::move(vector)); }
 
 [[nodiscard]] QVector3D  findTranslation(const QMatrix4x4 &matrix);
 [[nodiscard]] QVector3D  findScale      (const QMatrix4x4 &matrix);

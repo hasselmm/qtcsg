@@ -283,19 +283,19 @@ private slots:
         const auto rz   = Vertex{{-2, +1, +3}, {+0, +1, +0}};
         const auto rxyz = Vertex{{ra, rb, ra}, {na, nb, nc}};
 
-        QTest::newRow("identity")       << v0 <<    identity()          << v0   << 14.0f;
-        QTest::newRow("scaled-x")       << v0 <<      scaled({2, 1, 1}) << sx   << 17.0f;
-        QTest::newRow("scaled-y")       << v0 <<      scaled({1, 2, 1}) << sy   << 26.0f;
-        QTest::newRow("scaled-z")       << v0 <<      scaled({1, 1, 2}) << sz   << 41.0f;
-        QTest::newRow("scaled-xyz")     << v0 <<      scaled({2, 2, 2}) << sxyz << 56.0f;
-        QTest::newRow("translated-x")   << v0 <<  translated({1, 0, 0}) << tx   << 17.0f;
-        QTest::newRow("translated-y")   << v0 <<  translated({0, 1, 0}) << ty   << 19.0f;
-        QTest::newRow("translated-z")   << v0 <<  translated({0, 0, 1}) << tz   << 21.0f;
-        QTest::newRow("translated-xyz") << v0 <<  translated({1, 1, 1}) << txyz << 29.0f;
-        QTest::newRow("rotated-x")      << v0 << rotated(90, {1, 0, 0}) << rx   << 14.0f;
-        QTest::newRow("rotated-y")      << v0 << rotated(90, {0, 1, 0}) << ry   << 14.0f;
-        QTest::newRow("rotated-z")      << v0 << rotated(90, {0, 0, 1}) << rz   << 14.0f;
-        QTest::newRow("rotated-xyz")    << v0 << rotated(90, {1, 1, 1}) << rxyz << 14.0f;
+        QTest::newRow("identity")       << v0 <<     identity()          << v0   << 14.0f;
+        QTest::newRow("scaled-x")       << v0 <<        scale({2, 1, 1}) << sx   << 17.0f;
+        QTest::newRow("scaled-y")       << v0 <<        scale({1, 2, 1}) << sy   << 26.0f;
+        QTest::newRow("scaled-z")       << v0 <<        scale({1, 1, 2}) << sz   << 41.0f;
+        QTest::newRow("scaled-xyz")     << v0 <<        scale({2, 2, 2}) << sxyz << 56.0f;
+        QTest::newRow("translated-x")   << v0 <<  translation({1, 0, 0}) << tx   << 17.0f;
+        QTest::newRow("translated-y")   << v0 <<  translation({0, 1, 0}) << ty   << 19.0f;
+        QTest::newRow("translated-z")   << v0 <<  translation({0, 0, 1}) << tz   << 21.0f;
+        QTest::newRow("translated-xyz") << v0 <<  translation({1, 1, 1}) << txyz << 29.0f;
+        QTest::newRow("rotated-x")      << v0 << rotation(90, {1, 0, 0}) << rx   << 14.0f;
+        QTest::newRow("rotated-y")      << v0 << rotation(90, {0, 1, 0}) << ry   << 14.0f;
+        QTest::newRow("rotated-z")      << v0 << rotation(90, {0, 0, 1}) << rz   << 14.0f;
+        QTest::newRow("rotated-xyz")    << v0 << rotation(90, {1, 1, 1}) << rxyz << 14.0f;
     }
 
     void testVertexTransform()
