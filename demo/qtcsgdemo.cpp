@@ -42,6 +42,7 @@
 #include <QtWidgets/QWidget>
 
 namespace QtCSG::Demo {
+namespace {
 
 using Qt3DCore::QEntity;
 using Qt3DRender::QGeometryRenderer;
@@ -305,6 +306,7 @@ void Application::staticInit()
 }
 
 } // namespace
+} // namespace QtCSG::Demo
 
 int main(int argc, char *argv[])
 {
