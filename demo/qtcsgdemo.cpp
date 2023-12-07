@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+#include "orbitalcameracontroller.h"
+
 #include <qtcsg/qtcsg.h>
 #include <qtcsg/qtcsgmath.h>
 #include <qtcsg/qtcsgutils.h>
@@ -26,7 +28,6 @@
 
 #include <Qt3DExtras/QCuboidMesh>
 #include <Qt3DExtras/QCylinderMesh>
-#include <Qt3DExtras/QFirstPersonCameraController>
 #include <Qt3DExtras/QForwardRenderer>
 #include <Qt3DExtras/QPhongMaterial>
 #include <Qt3DExtras/QSphereMesh>
@@ -242,7 +243,7 @@ int Application::run()
     cameraEntity->setUpVector({0, 1, 0});
     cameraEntity->setViewCenter({0, 0, 0});
 
-    const auto cameraController = new Qt3DExtras::QFirstPersonCameraController{rootEntity};
+    const auto cameraController = new OrbitCameraController{rootEntity};
     cameraController->setCamera(cameraEntity);
 
     // lighting
