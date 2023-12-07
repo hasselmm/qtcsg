@@ -257,6 +257,9 @@ int Application::run()
     lightTransform->setTranslation(cameraEntity->position());
     lightEntity->addComponent(lightTransform);
 
+    connect(cameraEntity, &Qt3DRender::QCamera::positionChanged,
+            lightTransform, &Qt3DCore::QTransform::setTranslation);
+
     // create entities
     const auto showCaseEntity = createShowCase(rootEntity);
     const auto unionTestEntity = createUnionTest(rootEntity);
