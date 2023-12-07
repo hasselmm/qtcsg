@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "orbitalcameracontroller.h"
+#include "wireframematerial.h"
 
 #include <qtcsg/qtcsg.h>
 #include <qtcsg/qtcsgmath.h>
@@ -29,7 +30,6 @@
 #include <Qt3DExtras/QCuboidMesh>
 #include <Qt3DExtras/QCylinderMesh>
 #include <Qt3DExtras/QForwardRenderer>
-#include <Qt3DExtras/QPhongMaterial>
 #include <Qt3DExtras/QSphereMesh>
 #include <Qt3DExtras/Qt3DWindow>
 
@@ -75,7 +75,7 @@ void createEntity(QGeometryRenderer *renderer, QVector3D position, QColor color,
     transform->setRotation(QQuaternion::fromAxisAndAngle({1.0f, 0.0f, 0.0f}, 45.0f));
     transform->setTranslation(position);
 
-    const auto material = new Qt3DExtras::QPhongMaterial;
+    const auto material = new WireframeMaterial;
     material->setDiffuse(color);
 
     const auto entity = new QEntity{parent};
@@ -309,6 +309,11 @@ int Application::run()
 void Application::staticInit()
 {
     Utils::enabledColorfulLogging();
+
+    // Force Qt3D OpenGL renderer
+    constexpr auto rendererVariable = "QT3D_RENDERER";
+    if (!qEnvironmentVariableIsSet(rendererVariable))
+        qputenv(rendererVariable, "opengl");
 
 #if QT_VERSION_MAJOR < 6
     setAttribute(Qt::AA_EnableHighDpiScaling);

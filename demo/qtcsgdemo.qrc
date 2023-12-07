@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>shaders/gl3/robustwireframe.frag</file>
+        <file>shaders/gl3/robustwireframe.geom</file>
+        <file>shaders/gl3/robustwireframe.vert</file>
+    </qresource>
+</RCC>
