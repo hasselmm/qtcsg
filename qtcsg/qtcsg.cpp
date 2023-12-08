@@ -28,7 +28,7 @@ namespace QtCSG {
 
 namespace {
 
-Q_LOGGING_CATEGORY(lcNode, "qtcsg.io");
+Q_LOGGING_CATEGORY(lcNode, "qtcsg.node");
 
 template<class T>
 void flip(T &o)
