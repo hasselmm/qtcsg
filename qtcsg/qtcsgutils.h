@@ -40,6 +40,9 @@ template<typename T> requires std::is_enum_v<T>
 [[nodiscard]] bool reportError(const QLoggingCategory &category, Error error, const char *message,
                                std::source_location location = std::source_location::current());
 
+/// Enable colorful logging, so that information is easier to understand.
+void enabledColorfulLogging();
+
 } // namespace QtCSG::Utils
 
 #endif // QTCSG_QTCSGUTILS_H
