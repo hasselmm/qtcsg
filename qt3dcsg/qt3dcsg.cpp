@@ -54,11 +54,11 @@ Q_LOGGING_CATEGORY(lcGeometry, "qt3dcsg.geometry");
 
 /// Sets buffer data from some vector
 template<typename T>
-void setData(QBuffer *buffer, QVector<T> vector)
+void setData(QBuffer *buffer, const std::vector<T> &vector)
 {
-    const auto data = reinterpret_cast<const char *>(vector.constData());
+    const auto data = reinterpret_cast<const char *>(vector.data());
     const auto len = vector.size() * static_cast<int>(sizeof(T));
-    buffer->setData({data, len});
+    buffer->setData({data, static_cast<qsizetype>(len)});
 }
 
 /// Finds buffer data. Normally it should be sufficient to just call QBuffer::data(). Unfortunatly there also
@@ -304,21 +304,40 @@ Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
         return;
     }
 
-    auto vertices = QVector<Vertex>{};
-    auto indices = QVector<ushort>{};
+    const auto vertexCount = std::accumulate(polygons.cbegin(), polygons.cend(), 0U,
+                                             [](qsizetype n, const Polygon &p) {
+        return n + p.size();
+    });
+
+    const auto indexCount = std::accumulate(polygons.cbegin(), polygons.cend(), 0U,
+                                            [](qsizetype n, const Polygon &p) {
+        if (Q_UNLIKELY(p.size() < 3))
+            return n;
+
+        return n + 3 * (p.size() - 2);
+    });
+
+    auto vertices = std::vector<Vertex>{};
+    vertices.reserve(vertexCount);
+
+    auto indices = std::vector<ushort>{};
+    indices.reserve(indexCount);
 
     for (const auto &p: polygons) {
         const auto pv = p.vertices();
-        const auto i0 = vertices.count();
+        const auto i0 = vertices.size();
 
         std::copy(pv.begin(), pv.end(), std::back_inserter(vertices));
 
-        for (int i = 2; i < pv.count(); ++i) {
-            indices.append(i0);
-            indices.append(i0 + i - 1);
-            indices.append(i0 + i);
+        for (auto i = 2U; i < pv.count(); ++i) {
+            indices.emplace_back(i0);
+            indices.emplace_back(i0 + i - 1);
+            indices.emplace_back(i0 + i);
         }
     }
+
+    Q_ASSERT(vertices.size() == vertexCount);
+    Q_ASSERT(indices.size() == indexCount);
 
     const auto vertexBuffer = new QBuffer{this};
     setData(vertexBuffer, vertices);
@@ -333,7 +352,7 @@ Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
     positionAttribute->setBuffer(vertexBuffer);
     positionAttribute->setByteStride(sizeof(Vertex));
     positionAttribute->setByteOffset(offsetof(Vertex, m_position));
-    positionAttribute->setCount(vertices.count());
+    positionAttribute->setCount(vertices.size());
     positionAttribute->setName(QAttribute::defaultPositionAttributeName());
     positionAttribute->setVertexBaseType(QAttribute::Float);
     positionAttribute->setVertexSize(3);
@@ -342,7 +361,7 @@ Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
     normalAttribute->setBuffer(vertexBuffer);
     normalAttribute->setByteStride(sizeof(Vertex));
     normalAttribute->setByteOffset(offsetof(Vertex, m_normal));
-    normalAttribute->setCount(vertices.count());
+    normalAttribute->setCount(vertices.size());
     normalAttribute->setName(QAttribute::defaultNormalAttributeName());
     normalAttribute->setVertexBaseType(QAttribute::Float);
     normalAttribute->setVertexSize(3);
@@ -350,7 +369,7 @@ Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
 
     indexAttribute->setBuffer(indexBuffer);
     indexAttribute->setAttributeType(QAttribute::IndexAttribute);
-    indexAttribute->setCount(indices.count());
+    indexAttribute->setCount(indices.size());
     indexAttribute->setVertexBaseType(QAttribute::UnsignedShort);
     addAttribute(indexAttribute);
 }
