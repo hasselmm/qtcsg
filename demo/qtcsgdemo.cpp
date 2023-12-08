@@ -18,6 +18,8 @@
  */
 #include <qtcsg/qtcsg.h>
 #include <qtcsg/qtcsgmath.h>
+#include <qtcsg/qtcsgutils.h>
+
 #include <qt3dcsg/qt3dcsg.h>
 
 #include <Qt3DCore/QTransform>
@@ -300,6 +302,8 @@ int Application::run()
 
 void Application::staticInit()
 {
+    Utils::enabledColorfulLogging();
+
 #if QT_VERSION_MAJOR < 6
     setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
