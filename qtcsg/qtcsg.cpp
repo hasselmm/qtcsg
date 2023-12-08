@@ -18,10 +18,10 @@
  */
 #include "qtcsg.h"
 #include "qtcsgmath.h"
+#include "qtcsgutils.h"
 
 #include <QLoggingCategory>
 
-#include <QMatrix4x4>
 #include <cmath>
 
 namespace QtCSG {
@@ -29,6 +29,9 @@ namespace QtCSG {
 namespace {
 
 Q_LOGGING_CATEGORY(lcNode, "qtcsg.node");
+Q_LOGGING_CATEGORY(lcOperator, "qtcsg.operator");
+
+using Utils::reportError;
 
 template<class T>
 void flip(T &o)
@@ -296,12 +299,19 @@ Geometry cylinder(QVector3D center, float height, float radius, float slices)
 
 Geometry merge(Geometry lhs, Geometry rhs, int limit)
 {
+    if (reportError(lcOperator(), lhs.error(), "Invalid lhs geometry"))
+        return Geometry{lhs.error()};
+    if (reportError(lcOperator(), rhs.error(), "Invalid rhs geometry"))
+        return Geometry{lhs.error()};
+
     auto a = Node{};
     auto b = Node{};
 
-    if (const auto error = a.build(lhs.polygons(), limit); error != Error::NoError)
+    if (const auto error = a.build(lhs.polygons(), limit);
+        reportError(lcOperator(), error, "Could not build BSP tree from lhs geometry"))
         return Geometry{error};
-    if (const auto error = b.build(rhs.polygons(), limit); error != Error::NoError)
+    if (const auto error = b.build(rhs.polygons(), limit);
+        reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
     a.clipTo(b);
@@ -310,7 +320,8 @@ Geometry merge(Geometry lhs, Geometry rhs, int limit)
     b.clipTo(a);
     b.invert();
 
-    if (const auto error = a.build(b.allPolygons(), limit); error != Error::NoError)
+    if (const auto error = a.build(b.allPolygons(), limit);
+        reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
     return Geometry{a.allPolygons()};
@@ -318,12 +329,19 @@ Geometry merge(Geometry lhs, Geometry rhs, int limit)
 
 Geometry subtract(Geometry lhs, Geometry rhs, int limit)
 {
+    if (reportError(lcOperator(), lhs.error(), "Invalid lhs geometry"))
+        return Geometry{lhs.error()};
+    if (reportError(lcOperator(), rhs.error(), "Invalid rhs geometry"))
+        return Geometry{lhs.error()};
+
     auto a = Node{};
     auto b = Node{};
 
-    if (const auto error = a.build(lhs.polygons(), limit); error != Error::NoError)
+    if (const auto error = a.build(lhs.polygons(), limit);
+        reportError(lcOperator(), error, "Could not build BSP tree from lhs geometry"))
         return Geometry{error};
-    if (const auto error = b.build(rhs.polygons(), limit); error != Error::NoError)
+    if (const auto error = b.build(rhs.polygons(), limit);
+        reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
     a.invert();
@@ -333,7 +351,8 @@ Geometry subtract(Geometry lhs, Geometry rhs, int limit)
     b.clipTo(a);
     b.invert();
 
-    if (const auto error = a.build(b.allPolygons(), limit); error != Error::NoError)
+    if (const auto error = a.build(b.allPolygons(), limit);
+        reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
     a.invert();
@@ -343,12 +362,19 @@ Geometry subtract(Geometry lhs, Geometry rhs, int limit)
 
 Geometry intersect(Geometry lhs, Geometry rhs, int limit)
 {
+    if (reportError(lcOperator(), lhs.error(), "Invalid lhs geometry"))
+        return Geometry{lhs.error()};
+    if (reportError(lcOperator(), rhs.error(), "Invalid rhs geometry"))
+        return Geometry{lhs.error()};
+
     auto a = Node{};
     auto b = Node{};
 
-    if (const auto error = a.build(lhs.polygons(), limit); error != Error::NoError)
+    if (const auto error = a.build(lhs.polygons(), limit);
+        reportError(lcOperator(), error, "Could not build BSP tree from lhs geometry"))
         return Geometry{error};
-    if (const auto error = b.build(rhs.polygons(), limit); error != Error::NoError)
+    if (const auto error = b.build(rhs.polygons(), limit);
+        reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
     a.invert();
@@ -357,7 +383,8 @@ Geometry intersect(Geometry lhs, Geometry rhs, int limit)
     a.clipTo(b);
     b.clipTo(a);
 
-    if (const auto error = a.build(b.allPolygons(), limit); error != Error::NoError)
+    if (const auto error = a.build(b.allPolygons(), limit);
+        reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
     a.invert();
@@ -369,7 +396,8 @@ std::variant<Node, Error> Node::fromPolygons(QList<Polygon> polygons, int limit)
 {
     auto node = Node{};
 
-    if (const auto error = node.build(std::move(polygons), limit); error != Error::NoError)
+    if (const auto error = node.build(std::move(polygons), limit);
+        reportError(lcNode(), error, "Could not build BSP tree from polygons"))
         return {error};
 
     return {std::move(node)};

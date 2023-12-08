@@ -19,6 +19,7 @@
 #include "qt3dcsg.h"
 
 #include <qtcsg/qtcsg.h>
+#include <qtcsg/qtcsgutils.h>
 
 #include <QFloat16>
 #include <QLoggingCategory>
@@ -44,6 +45,8 @@ using Qt3DCore::QBuffer;
 
 using QtCSG::Polygon;
 using QtCSG::Vertex;
+
+using QtCSG::Utils::reportError;
 
 namespace {
 
@@ -290,10 +293,20 @@ QVector3D AttributeReader<QVector3D>::at(int index) const
 
 Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
 {
+    if (reportError(lcGeometry(), csg.error(),
+                    "Cannot create Qt3D geometry from QtCSG geometry with errors"))
+        return;
+
+    const auto polygons = csg.polygons();
+
+    if (polygons.isEmpty()) {
+        qCWarning(lcGeometry, "Cannot create Qt3D geometry from empty QtCSG geometry");
+        return;
+    }
+
     auto vertices = QVector<Vertex>{};
     auto indices = QVector<ushort>{};
 
-    const auto polygons = csg.polygons();
     for (const auto &p: polygons) {
         const auto pv = p.vertices();
         const auto i0 = vertices.count();
@@ -383,7 +396,8 @@ QtCSG::Geometry geometry(QGeometry *geometry, QMatrix4x4 transformation)
 QtCSG::Geometry geometry(QGeometryRenderer *renderer, QMatrix4x4 transformation)
 {
     if (renderer->primitiveType() != QGeometryRenderer::Triangles) {
-        qCWarning(lcGeometry, "Unsupported primitive type: %d", renderer->primitiveType());
+        qCWarning(lcGeometry, "Unsupported primitive type: %s",
+                  QtCSG::Utils::keyName(renderer->primitiveType()));
         return QtCSG::Geometry{{}};
     }
 
@@ -395,7 +409,8 @@ QtCSG::Geometry geometry(QGeometryRenderer *renderer, QMatrix4x4 transformation)
 QtCSG::Geometry geometry(QGeometryRenderer *renderer, QMatrix4x4 transformation)
 {
     if (renderer->primitiveType() != QGeometryRenderer::Triangles) {
-        qCWarning(lcGeometry, "Unsupported primitive type: %d", renderer->primitiveType());
+        qCWarning(lcGeometry, "Unsupported primitive type: %s",
+                  QtCSG::Utils::keyName(renderer->primitiveType()));
         return QtCSG::Geometry{{}};
     }
 
