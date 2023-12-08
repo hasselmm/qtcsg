@@ -1,4 +1,10 @@
-qt_add_executable(QtCSGDemo qtcsgdemo.cpp)
+qt_add_executable(
+    QtCSGDemo
+    qtcsgdemo.cpp
+    orbitalcameracontroller.cpp
+    orbitalcameracontroller.h
+)
+
 target_link_libraries(QtCSGDemo PRIVATE Qt3DCSG Qt::3DExtras Qt::Widgets)
 
 #if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
