@@ -32,7 +32,7 @@ namespace QtCSG {
 
 Q_NAMESPACE
 
-constexpr auto defaultRecursionLimit() { return 64; }
+constexpr auto defaultRecursionLimit() { return 1024; }
 
 enum class Error
 {
@@ -200,7 +200,9 @@ class Node
 {
 public:
     Node() = default;
-    Node(QList<Polygon> polygons, int limit = defaultRecursionLimit());
+
+    static std::variant<Node, Error> fromPolygons(QList<Polygon> polygons,
+                                                  int limit = defaultRecursionLimit());
 
     [[nodiscard]] auto plane() const { return m_plane; }
     [[nodiscard]] auto polygons() const { return m_polygons; }
