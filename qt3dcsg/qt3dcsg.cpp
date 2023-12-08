@@ -304,8 +304,24 @@ Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
         return;
     }
 
+    const auto vertexCount = std::accumulate(polygons.cbegin(), polygons.cend(), 0U,
+                                             [](qsizetype n, const Polygon &p) {
+        return n + p.size();
+    });
+
+    const auto indexCount = std::accumulate(polygons.cbegin(), polygons.cend(), 0U,
+                                            [](qsizetype n, const Polygon &p) {
+        if (Q_UNLIKELY(p.size() < 3))
+            return n;
+
+        return n + 3 * (p.size() - 2);
+    });
+
     auto vertices = std::vector<Vertex>{};
+    vertices.reserve(vertexCount);
+
     auto indices = std::vector<ushort>{};
+    indices.reserve(indexCount);
 
     for (const auto &p: polygons) {
         const auto pv = p.vertices();
@@ -319,6 +335,9 @@ Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
             indices.emplace_back(i0 + i);
         }
     }
+
+    Q_ASSERT(vertices.size() == vertexCount);
+    Q_ASSERT(indices.size() == indexCount);
 
     const auto vertexBuffer = new QBuffer{this};
     setData(vertexBuffer, vertices);

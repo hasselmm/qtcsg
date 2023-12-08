@@ -135,6 +135,9 @@ public:
                                     m_vertices[2].position())}
     {}
 
+    [[nodiscard]] auto isEmpty() const { return m_vertices.isEmpty(); }
+    [[nodiscard]] auto size() const { return m_vertices.size(); }
+
     [[nodiscard]] auto vertices() const { return m_vertices; }
     [[nodiscard]] auto shared() const { return m_shared; }
     [[nodiscard]] auto plane() const { return m_plane; }
