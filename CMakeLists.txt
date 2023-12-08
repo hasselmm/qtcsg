@@ -12,6 +12,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+option(QTCSG_IGNORE_ERRORS "Ignore errors when building CSG trees")
+
+if (QTCSG_IGNORE_ERRORS)
+    add_compile_definitions(QTCSG_IGNORE_ERRORS=1)
+endif()
+
 add_compile_definitions(QT_DISABLE_DEPRECATED_BEFORE=0x050f00)
 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror=missing-declarations>)
 add_compile_options(-Werror=switch -Werror=unused)

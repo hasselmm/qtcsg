@@ -6,6 +6,8 @@ add_library(
     qtcsgio.h
     qtcsgmath.cpp
     qtcsgmath.h
+    qtcsgutils.cpp
+    qtcsgutils.h
 )
 
 target_include_directories(QtCSG PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
