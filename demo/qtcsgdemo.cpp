@@ -41,6 +41,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QBoxLayout>
 #include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QWidget>
 
@@ -57,6 +58,9 @@ const auto s_colors = std::array {
     QRgb{0x23'66'54},
     QRgb{0x23'23'66},
 };
+
+const auto s_wireframeVisible = 0.5f;
+const auto s_wireframeHidden = 0.0f;
 
 // some utility functions making it easier to deal with matrices and vectors
 // -------------------------------------------------------------------------------------------------
@@ -76,6 +80,7 @@ void createEntity(QGeometryRenderer *renderer, QVector3D position, QColor color,
     transform->setTranslation(position);
 
     const auto material = new WireframeMaterial;
+    material->setLineWidth(s_wireframeHidden);
     material->setDiffuse(color);
 
     const auto entity = new QEntity{parent};
@@ -112,6 +117,11 @@ private:
 
     QEntity *createShowCase(QEntity *parent);
     QEntity *createUnionTest(QEntity *parent);
+
+    void collectEntities(QEntity *root);
+    void onWireframeBoxToggled(bool checked);
+
+    QList<QEntity *> m_entities;
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -221,6 +231,23 @@ QEntity *Application::createUnionTest(QEntity *parent)
     return unionTest;
 }
 
+void Application::collectEntities(QEntity *root)
+{
+    for (const auto scene: root->childNodes()) {
+        for (const auto node: scene->childNodes()) {
+            if (const auto entity = dynamic_cast<QEntity *>(node))
+                m_entities += entity;
+        }
+    }
+}
+
+void Application::onWireframeBoxToggled(bool checked)
+{
+    for (const auto entity: m_entities)
+        for (const auto material: entity->componentsOfType<WireframeMaterial>())
+            material->setLineWidth(checked ? s_wireframeVisible : s_wireframeHidden);
+}
+
 int Application::run()
 {
     // 3D view
@@ -265,10 +292,14 @@ int Application::run()
 
     // set root object of the scene
     view->setRootEntity(rootEntity);
+    collectEntities(rootEntity);
 
     // main window
     const auto window = new QWidget;
     window->setWindowTitle(tr("QtCSG Demo"));
+
+    const auto wireframeBox = new QCheckBox{tr("Show &Wireframes"), window};
+    wireframeBox->setFocusPolicy(Qt::FocusPolicy::TabFocus);
 
     const auto showCaseButton = new QPushButton{tr("&1: Show Case"), window};
     showCaseButton->setFocusPolicy(Qt::FocusPolicy::TabFocus);
@@ -282,13 +313,14 @@ int Application::run()
 
     connect(showCaseButton, &QPushButton::toggled, showCaseEntity, &QEntity::setEnabled);
     connect(unionTestButton, &QPushButton::toggled, unionTestEntity, &QEntity::setEnabled);
+    connect(wireframeBox, &QCheckBox::toggled, this, &Application::onWireframeBoxToggled);
 
     const auto buttonGroup = new QButtonGroup{window};
     buttonGroup->addButton(showCaseButton);
     buttonGroup->addButton(unionTestButton);
 
     const auto buttons = new QHBoxLayout;
-    buttons->addStretch(1);
+    buttons->addWidget(wireframeBox, 1);
     buttons->addWidget(showCaseButton);
     buttons->addWidget(unionTestButton);
     buttons->addStretch(1);

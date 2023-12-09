@@ -102,5 +102,10 @@ void main()
 {
     // Calculate the color from the phong model
     vec4 color = vec4(adsModel(fs_in.position, normalize(fs_in.normal)), 1.0);
-    fragColor = shadeLine(color);
+
+    // Highlight edges if requested
+    if (line.width > 0)
+        fragColor = shadeLine(color);
+    else
+        fragColor = color;
 }
