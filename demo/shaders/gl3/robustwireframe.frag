@@ -1,5 +1,8 @@
 #version 330 core
 
+// Copyright (C) 2014 Klaralvdalens Datakonsult AB (KDAB).
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
+
 uniform struct LightInfo {
     vec4 position;
     vec3 intensity;
