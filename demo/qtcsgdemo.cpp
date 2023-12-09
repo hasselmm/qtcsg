@@ -155,7 +155,6 @@ QEntity *Application::createShowCase(QEntity *parent)
 
     // CSG operations on native QtCSG geometries
     {
-
         const auto delta = 0.3f;
         const auto r = rotation(45, 1, 1, 0);
         const auto a = r * QtCSG::cube({-delta, -delta, +delta});
@@ -249,7 +248,7 @@ int Application::run()
     // lighting
     const auto lightEntity = new QEntity{rootEntity};
     const auto light = new Qt3DRender::QPointLight{lightEntity};
-    light->setColor("white");
+    light->setColor(Qt::white);
     light->setIntensity(2.5f);
     lightEntity->addComponent(light);
 
@@ -269,13 +268,13 @@ int Application::run()
 
     // main window
     const auto window = new QWidget;
-    window->setWindowTitle("QtCSG Demo");
+    window->setWindowTitle(tr("QtCSG Demo"));
 
-    const auto showCaseButton = new QPushButton{"&1: Show Case", window};
+    const auto showCaseButton = new QPushButton{tr("&1: Show Case"), window};
     showCaseButton->setCheckable(true);
     showCaseButton->setChecked(true);
 
-    const auto unionTestButton = new QPushButton{"&2: Union Test", window};
+    const auto unionTestButton = new QPushButton{tr("&2: Union Test"), window};
     unionTestButton->setCheckable(true);
     unionTestEntity->setEnabled(false);
 
