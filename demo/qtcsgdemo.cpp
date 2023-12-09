@@ -155,7 +155,6 @@ QEntity *Application::createShowCase(QEntity *parent)
 
     // CSG operations on native QtCSG geometries
     {
-
         const auto delta = 0.3f;
         const auto r = rotation(45, 1, 1, 0);
         const auto a = r * QtCSG::cube({-delta, -delta, +delta});
