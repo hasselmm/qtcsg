@@ -248,7 +248,7 @@ int Application::run()
     // lighting
     const auto lightEntity = new QEntity{rootEntity};
     const auto light = new Qt3DRender::QPointLight{lightEntity};
-    light->setColor("white");
+    light->setColor(Qt::white);
     light->setIntensity(2.5f);
     lightEntity->addComponent(light);
 
