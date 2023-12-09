@@ -268,13 +268,13 @@ int Application::run()
 
     // main window
     const auto window = new QWidget;
-    window->setWindowTitle("QtCSG Demo");
+    window->setWindowTitle(tr("QtCSG Demo"));
 
-    const auto showCaseButton = new QPushButton{"&1: Show Case", window};
+    const auto showCaseButton = new QPushButton{tr("&1: Show Case"), window};
     showCaseButton->setCheckable(true);
     showCaseButton->setChecked(true);
 
-    const auto unionTestButton = new QPushButton{"&2: Union Test", window};
+    const auto unionTestButton = new QPushButton{tr("&2: Union Test"), window};
     unionTestButton->setCheckable(true);
     unionTestEntity->setEnabled(false);
 
