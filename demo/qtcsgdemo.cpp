@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+#include "qtcsgappsupport.h"
 #include "orbitalcameracontroller.h"
 #include "wireframematerial.h"
 
@@ -68,14 +69,6 @@ struct RenderingStyle {
 const auto s_wireframeVisible = RenderingStyle{1.0f, 0.2f, QColor::fromRgbF(0.0, 0.0, 0.0, 0.0)};
 const auto s_wireframeHidden = RenderingStyle{0.0f, 1.0f, QColor::fromRgbF(0.95, 0.95, 0.95, 1.0)};
 
-// some utility functions making it easier to deal with matrices and vectors
-// -------------------------------------------------------------------------------------------------
-
-[[nodiscard]] QPoint toPoint(QSize size)
-{
-    return {size.width(), size.height()};
-}
-
 // convenience function to create Qt3D entities from geometry renderers
 // -------------------------------------------------------------------------------------------------
 void createEntity(QGeometryRenderer *renderer, QVector3D position, QColor color, QEntity *parent)
@@ -98,21 +91,11 @@ void createEntity(QGeometryRenderer *renderer, QVector3D position, QColor color,
     entity->addComponent(transform);
 }
 
-// move static initialization of QApplication from main() into our Application class
-// -------------------------------------------------------------------------------------------------
-
-template<class T>
-class StaticInit
-{
-public:
-    StaticInit() { T::staticInit(); }
-};
-
 // the demo application
 // -------------------------------------------------------------------------------------------------
 class Application
-        : private StaticInit<Application>
-        , public QApplication
+    : private AppSupport::StaticInit<Application>
+    , public QApplication
 {
     friend class StaticInit;
 
@@ -351,7 +334,7 @@ int Application::run()
     container->setFocus();
 
     const auto windowSize = QSize{1200, 800};
-    const auto position = toPoint((screenSize - windowSize) / 2);
+    const auto position = AppSupport::toPoint((screenSize - windowSize) / 2);
     window->setGeometry({position, windowSize});
     window->show();
 

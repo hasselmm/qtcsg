@@ -1,15 +1,26 @@
-qt_add_executable(
-    QtCSGDemo
-    qtcsgdemo.cpp
-    qtcsgdemo.qrc
-
+qt_add_library(
+    QtCSGAppSupport STATIC
+    qtcsgappsupport.cpp
+    qtcsgappsupport.h
     orbitalcameracontroller.cpp
     orbitalcameracontroller.h
     wireframematerial.cpp
     wireframematerial.h
+    wireframematerial.qrc
 )
 
-target_link_libraries(QtCSGDemo PRIVATE Qt3DCSG Qt::3DExtras Qt::Widgets)
+target_link_libraries(QtCSGAppSupport PUBLIC Qt3DCSG Qt::3DExtras)
+
+qt_add_executable(QtCSGDemo qtcsgdemo.cpp)
+target_link_libraries(QtCSGDemo PRIVATE QtCSGAppSupport Qt::Widgets)
+
+set_target_properties(QtCSGDemo PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER qtcsgdemo.taschenorakel.de
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE TRUE
+    WIN32_EXECUTABLE TRUE
+)
 
 #if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 ## Define target properties for Android with Qt 6 as:
@@ -19,11 +30,3 @@ target_link_libraries(QtCSGDemo PRIVATE Qt3DCSG Qt::3DExtras Qt::Widgets)
 ## Define properties for Android with Qt 5 after find_package() calls as:
 ##    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
 #endif()
-
-set_target_properties(QtCSGDemo PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER qtcsg.taschenorakel.de
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
