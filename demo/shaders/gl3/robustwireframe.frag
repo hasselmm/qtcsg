@@ -6,11 +6,11 @@
 uniform struct LineInfo {
     float width;
     vec4 color;
-} line;
+} frontLine, backLine;
 
-uniform vec3  ka;           // Ambient reflectivity
-uniform vec3  kd;           // Diffuse reflectivity
-uniform vec3  ks;           // Specular reflectivity
+uniform vec4  ka;           // Ambient reflectivity
+uniform vec4  kd;           // Diffuse reflectivity
+uniform vec4  ks;           // Specular reflectivity
 uniform float shininess;    // Specular shininess factor
 uniform vec3  eyePosition;
 
@@ -26,7 +26,7 @@ out vec4 fragColor;
 
 #pragma include phong.inc.frag
 
-vec4 shadeLine(const in vec4 color)
+vec4 shadeLine(const in vec4 color, LineInfo line)
 {
     // Find the smallest distance between the fragment and a triangle edge
     float d;
@@ -76,14 +76,19 @@ vec4 shadeLine(const in vec4 color)
 
 void main()
 {
+    LineInfo line = gl_FrontFacing ? frontLine : backLine;
+    vec3 worldNormal = fs_in.normal;
+
+    if (!gl_FrontFacing)
+        worldNormal = -worldNormal;
+
     // Calculate the color from the phong model
     vec3 worldView = normalize(eyePosition - fs_in.position);
-    vec4 color = phongFunction(vec4(ka, 1), vec4(kd, 1), vec4(ks, 1), shininess,
-                               fs_in.position, worldView, fs_in.normal);
+    vec4 color = phongFunction(ka, kd, ks, shininess, fs_in.position, worldView, worldNormal);
 
     // Highlight edges if requested
     if (line.width > 0)
-        fragColor = shadeLine(color);
+        fragColor = shadeLine(color, line);
     else
         fragColor = color;
 }
