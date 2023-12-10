@@ -59,8 +59,14 @@ const auto s_colors = std::array {
     QRgb{0x23'23'66},
 };
 
-const auto s_wireframeVisible = 0.5f;
-const auto s_wireframeHidden = 0.0f;
+struct RenderingStyle {
+    float lineWidth;
+    float diffuseAlpha;
+    QColor specularColor;
+};
+
+const auto s_wireframeVisible = RenderingStyle{1.0f, 0.2f, QColor::fromRgbF(0.0, 0.0, 0.0, 0.0)};
+const auto s_wireframeHidden = RenderingStyle{0.0f, 1.0f, QColor::fromRgbF(0.95, 0.95, 0.95, 1.0)};
 
 // some utility functions making it easier to deal with matrices and vectors
 // -------------------------------------------------------------------------------------------------
@@ -80,8 +86,11 @@ void createEntity(QGeometryRenderer *renderer, QVector3D position, QColor color,
     transform->setTranslation(position);
 
     const auto material = new WireframeMaterial;
-    material->setLineWidth(s_wireframeHidden);
-    material->setDiffuse(color);
+    material->setFrontLineWidth(s_wireframeHidden.lineWidth);
+    material->setBackLineWidth(s_wireframeHidden.lineWidth);
+    material->setSpecular(s_wireframeHidden.specularColor);
+    color.setAlphaF(s_wireframeHidden.diffuseAlpha);
+    material->setDiffuse(std::move(color));
 
     const auto entity = new QEntity{parent};
     entity->addComponent(renderer);
@@ -243,9 +252,20 @@ void Application::collectEntities(QEntity *root)
 
 void Application::onWireframeBoxToggled(bool checked)
 {
-    for (const auto entity: m_entities)
-        for (const auto material: entity->componentsOfType<WireframeMaterial>())
-            material->setLineWidth(checked ? s_wireframeVisible : s_wireframeHidden);
+    const auto &renderStyle = checked ? s_wireframeVisible : s_wireframeHidden;
+
+    for (const auto entity: m_entities) {
+        for (const auto material: entity->componentsOfType<WireframeMaterial>()) {
+            auto diffuseColor = material->diffuse();
+            diffuseColor.setAlphaF(renderStyle.diffuseAlpha);
+
+            material->setAlphaBlendingEnabled(checked);
+            material->setDiffuse(std::move(diffuseColor));
+            material->setSpecular(renderStyle.specularColor);
+            material->setFrontLineWidth(renderStyle.lineWidth);
+            material->setBackLineWidth(renderStyle.lineWidth);
+        }
+    }
 }
 
 int Application::run()

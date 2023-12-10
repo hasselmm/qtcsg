@@ -24,6 +24,13 @@
 #include <Qt3DRender/QEffect>
 #include <Qt3DRender/QMaterial>
 
+namespace Qt3DRender {
+class QBlendEquation;
+class QBlendEquationArguments;
+class QCullFace;
+class QNoDepthMask;
+} // namespace Qt3DRender
+
 namespace QtCSG::Demo {
 
 class WireframeMaterial : public Qt3DRender::QMaterial
@@ -33,8 +40,11 @@ class WireframeMaterial : public Qt3DRender::QMaterial
     Q_PROPERTY(QColor diffuse READ diffuse WRITE setDiffuse NOTIFY diffuseChanged FINAL)
     Q_PROPERTY(QColor specular READ specular WRITE setSpecular NOTIFY specularChanged FINAL)
     Q_PROPERTY(qreal shininess READ shininess WRITE setShininess NOTIFY shininessChanged FINAL)
-    Q_PROPERTY(qreal lineWidth READ lineWidth WRITE setLineWidth NOTIFY lineWidthChanged FINAL)
-    Q_PROPERTY(QColor lineColor READ lineColor WRITE setLineColor NOTIFY lineColorChanged FINAL)
+    Q_PROPERTY(qreal frontLineWidth READ frontLineWidth WRITE setFrontLineWidth NOTIFY frontLineWidthChanged FINAL)
+    Q_PROPERTY(QColor frontLineColor READ frontLineColor WRITE setFrontLineColor NOTIFY frontLineColorChanged FINAL)
+    Q_PROPERTY(qreal backLineWidth READ backLineWidth WRITE setBackLineWidth NOTIFY backLineWidthChanged FINAL)
+    Q_PROPERTY(QColor backLineColor READ backLineColor WRITE setBackLineColor NOTIFY backLineColorChanged FINAL)
+    Q_PROPERTY(bool alphaBlendingEnabled READ isAlphaBlendingEnabled WRITE setAlphaBlendingEnabled NOTIFY alphaBlendingEnabledChanged FINAL)
 
 public:
     explicit WireframeMaterial(Qt3DCore::QNode *parent = nullptr);
@@ -51,27 +61,47 @@ public:
     void setShininess(qreal newShininess);
     qreal shininess() const;
 
-    void setLineWidth(qreal newLineWidth);
-    qreal lineWidth() const;
+    void setFrontLineWidth(qreal newLineWidth);
+    qreal frontLineWidth() const;
 
-    void setLineColor(QColor newLineColor);
-    QColor lineColor() const;
+    void setFrontLineColor(QColor newLineColor);
+    QColor frontLineColor() const;
+
+    void setBackLineWidth(qreal newLineWidth);
+    qreal backLineWidth() const;
+
+    void setBackLineColor(QColor newLineColor);
+    QColor backLineColor() const;
+
+    void setAlphaBlendingEnabled(bool enabled);
+    bool isAlphaBlendingEnabled() const;
 
 signals:
     void ambientChanged(QColor ambient);
     void diffuseChanged(QColor diffuse);
     void specularChanged(QColor specular);
     void shininessChanged(qreal shininess);
-    void lineWidthChanged(qreal lineWidth);
-    void lineColorChanged(QColor lineColor);
+    void frontLineWidthChanged(qreal frontLineWidth);
+    void frontLineColorChanged(QColor frontLineColor);
+    void backLineWidthChanged(qreal backLineWidth);
+    void backLineColorChanged(QColor backLineColor);
+
+    void alphaBlendingEnabledChanged(bool alphaBlendingEnabled);
 
 private:
     Qt3DRender::QParameter *const m_ambient;
     Qt3DRender::QParameter *const m_diffuse;
     Qt3DRender::QParameter *const m_specular;
     Qt3DRender::QParameter *const m_shininess;
-    Qt3DRender::QParameter *const m_lineWidth;
-    Qt3DRender::QParameter *const m_lineColor;
+    Qt3DRender::QParameter *const m_frontLineWidth;
+    Qt3DRender::QParameter *const m_frontLineColor;
+    Qt3DRender::QParameter *const m_backLineWidth;
+    Qt3DRender::QParameter *const m_backLineColor;
+
+    Qt3DRender::QCullFace *const m_cullFace;
+    Qt3DRender::QNoDepthMask *const m_noDepthMask;
+    Qt3DRender::QBlendEquation *const m_blendEquation;
+    Qt3DRender::QBlendEquationArguments *const m_blendEquationArguments;
 };
 
 } // namespace QtCSG::Demo
