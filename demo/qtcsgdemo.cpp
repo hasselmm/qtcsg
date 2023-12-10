@@ -61,7 +61,7 @@ const auto s_colors = std::array {
 // some utility functions making it easier to deal with matrices and vectors
 // -------------------------------------------------------------------------------------------------
 
-QPoint toPoint(QSize size)
+[[nodiscard]] QPoint toPoint(QSize size)
 {
     return {size.width(), size.height()};
 }
