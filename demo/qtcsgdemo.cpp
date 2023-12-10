@@ -61,7 +61,7 @@ const auto s_colors = std::array {
 // some utility functions making it easier to deal with matrices and vectors
 // -------------------------------------------------------------------------------------------------
 
-QPoint toPoint(QSize size)
+[[nodiscard]] QPoint toPoint(QSize size)
 {
     return {size.width(), size.height()};
 }
@@ -271,10 +271,12 @@ int Application::run()
     window->setWindowTitle(tr("QtCSG Demo"));
 
     const auto showCaseButton = new QPushButton{tr("&1: Show Case"), window};
+    showCaseButton->setFocusPolicy(Qt::FocusPolicy::TabFocus);
     showCaseButton->setCheckable(true);
     showCaseButton->setChecked(true);
 
     const auto unionTestButton = new QPushButton{tr("&2: Union Test"), window};
+    unionTestButton->setFocusPolicy(Qt::FocusPolicy::TabFocus);
     unionTestButton->setCheckable(true);
     unionTestEntity->setEnabled(false);
 
