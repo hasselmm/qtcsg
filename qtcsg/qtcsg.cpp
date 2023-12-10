@@ -271,7 +271,7 @@ Geometry cylinder(QVector3D start, QVector3D end, float radius, float slices)
     const auto axisX = QVector3D::crossProduct({isY ? 1.0f : 0, isY ? 0 : 1.0f, 0}, axisZ).normalized();
     const auto axisY = QVector3D::crossProduct(axisX, axisZ).normalized();
     const auto vertexStart = Vertex{start, -axisZ};
-    const auto vertexEnd = Vertex{end, axisZ.normalized()};
+    const auto vertexEnd = Vertex{end, axisZ};
 
     const auto point = [=](int stack, int slice, int normalBlend) {
         const auto phi = 2 * M_PI * slice / slices;
