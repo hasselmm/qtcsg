@@ -58,7 +58,7 @@ void setData(QBuffer *buffer, const std::vector<T> &vector)
 {
     const auto data = reinterpret_cast<const char *>(vector.data());
     const auto len = vector.size() * static_cast<int>(sizeof(T));
-    buffer->setData({data, static_cast<qsizetype>(len)});
+    buffer->setData({data, static_cast<int>(len)});
 }
 
 /// Finds buffer data. Normally it should be sufficient to just call QBuffer::data(). Unfortunatly there also
