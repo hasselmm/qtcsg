@@ -77,8 +77,6 @@ WireframeMaterial::WireframeMaterial(Qt3DCore::QNode *parent)
     technique->graphicsApiFilter()->setMajorVersion(3);
     technique->graphicsApiFilter()->setMinorVersion(1);
     technique->addFilterKey(makeFilterKey("renderingStyle", "forward", technique));
-    technique->addParameter(new QParameter{"light.position", QVector4D{0.0, 0.0, 0.0, 1.0}});
-    technique->addParameter(new QParameter{"light.intensity", QVector3D{1.0, 1.0, 1.0}});
     technique->addParameter(m_lineWidth);
     technique->addParameter(m_lineColor);
 

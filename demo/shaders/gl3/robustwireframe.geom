@@ -6,7 +6,7 @@
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
-in EyeSpaceVertex {
+in WorldSpaceVertex {
     vec3 position;
     vec3 normal;
 } gs_in[];
