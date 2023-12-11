@@ -18,9 +18,19 @@ if (QTCSG_IGNORE_ERRORS)
     add_compile_definitions(QTCSG_IGNORE_ERRORS=1)
 endif()
 
-add_compile_definitions(QT_DISABLE_DEPRECATED_BEFORE=0x050f00)
-add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror=missing-declarations>)
-add_compile_options(-Werror=switch -Werror=unused)
+add_compile_definitions(
+    QT_DISABLE_DEPRECATED_BEFORE=0x050f00
+    QT_NO_CONTEXTLESS_CONNECT=1
+)
+
+add_compile_options(
+    $<$<COMPILE_LANGUAGE:CXX>:-Werror=missing-declarations>
+    -Wall -Wextra
+    -Werror=sign-compare
+    -Werror=switch
+    -Werror=unused
+    -Werror=type-limits
+)
 
 include(QtCSGDebug)
 include(QtCSGEnableAlternateLinker)
