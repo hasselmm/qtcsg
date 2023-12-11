@@ -292,6 +292,7 @@ QVector3D AttributeReader<QVector3D>::at(int index) const
 } // namespace
 
 Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
+    : QGeometry{parent}
 {
     if (reportError(lcGeometry(), csg.error(),
                     "Cannot create Qt3D geometry from QtCSG geometry with errors"))
