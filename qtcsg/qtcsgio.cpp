@@ -117,7 +117,7 @@ Geometry OffFileFormat::readGeometry(QIODevice *device) const
 
         case State::Faces:
             if (const auto n = line.section(' ', 0, 0).toInt(&ok); ok) {
-                auto indices = QList<int>{};
+                auto indices = std::vector<uint>{};
                 indices.reserve(n);
 
                 for (auto i = 1; i <= n; ++i) {
@@ -125,7 +125,7 @@ Geometry OffFileFormat::readGeometry(QIODevice *device) const
                     static_assert(std::is_unsigned_v<decltype(index)>);
 
                     if (ok && index < vertices.size()) {
-                        emplaceBack(indices, index);
+                        indices.emplace_back(index);
                     } else {
                         qCWarning(lcInputOutput, "Invalid index at line %d, field %d", lineNumber, i);
                         return Geometry{Error::FileFormatError};
