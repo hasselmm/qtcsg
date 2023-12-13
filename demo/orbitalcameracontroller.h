@@ -48,8 +48,8 @@ public:
 private:
     void moveCamera(const InputState &state, float dt) override;
 
-    void orbit(const InputState &state, float rx, float ry);
-    void zoom(const InputState &state, float dz);
+    void orbit(float rx, float ry);
+    void zoom(float dz);
     void translate(const InputState &state, float dt);
 };
 

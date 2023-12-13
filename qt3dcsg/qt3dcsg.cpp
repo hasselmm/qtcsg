@@ -146,10 +146,9 @@ public:
 const void *AttributeReaderBase::entry(int index) const
 {
     const auto offset = stride() * index + m_attribute->byteOffset();
+    static_assert(std::is_unsigned_v<decltype(offset)>);
 
-    if (Q_UNLIKELY(offset < 0))
-        return nullptr;
-    if (Q_UNLIKELY(offset >= m_data.size()))
+    if (Q_UNLIKELY(offset >= static_cast<std::size_t>(m_data.size())))
         return nullptr;
 
     return m_data.constData() + offset;
@@ -292,6 +291,7 @@ QVector3D AttributeReader<QVector3D>::at(int index) const
 } // namespace
 
 Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
+    : QGeometry{parent}
 {
     if (reportError(lcGeometry(), csg.error(),
                     "Cannot create Qt3D geometry from QtCSG geometry with errors"))
@@ -320,16 +320,18 @@ Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
     auto vertices = std::vector<Vertex>{};
     vertices.reserve(vertexCount);
 
-    auto indices = std::vector<ushort>{};
+    using IndexType = ushort;
+    auto indices = std::vector<IndexType>{};
     indices.reserve(indexCount);
 
     for (const auto &p: polygons) {
         const auto pv = p.vertices();
-        const auto i0 = vertices.size();
+        const auto i0 = static_cast<IndexType>(vertices.size());
 
+        Q_ASSERT(vertices.size() + pv.count() <= std::numeric_limits<IndexType>::max());
         std::copy(pv.begin(), pv.end(), std::back_inserter(vertices));
 
-        for (auto i = 2U; i < pv.count(); ++i) {
+        for (auto i = IndexType{2}; i < pv.count(); ++i) {
             indices.emplace_back(i0);
             indices.emplace_back(i0 + i - 1);
             indices.emplace_back(i0 + i);
@@ -394,7 +396,7 @@ QtCSG::Geometry geometry(QGeometry *geometry, QMatrix4x4 transformation)
         const auto count = index.attribute()->count();
         polygons.reserve(count / 3);
 
-        for (auto i = 0; i < count; i += 3) {
+        for (auto i = 0U; i < count; i += 3) {
             const auto ia = index.at(i);
             const auto ib = index.at(i + 1);
             const auto ic = index.at(i + 2);

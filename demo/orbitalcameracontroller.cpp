@@ -25,7 +25,7 @@ namespace QtCSG::Demo {
 void OrbitCameraController::moveCamera(const InputState &state, float dt)
 {
     if (state.rightMouseButtonActive && state.leftMouseButtonActive) {
-        zoom(state, state.ryAxisValue * dt);
+        zoom(state.ryAxisValue * dt);
     } else if (state.rightMouseButtonActive
                || (state.leftMouseButtonActive && state.altKeyActive)) {
         if (state.shiftKeyActive) {
@@ -34,7 +34,7 @@ void OrbitCameraController::moveCamera(const InputState &state, float dt)
             translate(state, dt * 2.5);
         }
     } else if (state.leftMouseButtonActive) {
-        orbit(state, state.rxAxisValue * dt, state.ryAxisValue * dt);
+        orbit(state.rxAxisValue * dt, state.ryAxisValue * dt);
     }
 
     if (state.altKeyActive) {
@@ -44,18 +44,18 @@ void OrbitCameraController::moveCamera(const InputState &state, float dt)
             translate(state, dt);
         }
     } else {
-        orbit(state, state.txAxisValue * dt, state.tyAxisValue * dt);
-        zoom(state, state.tzAxisValue * dt);
+        orbit(state.txAxisValue * dt, state.tyAxisValue * dt);
+        zoom(state.tzAxisValue * dt);
     }
 }
 
-void OrbitCameraController::orbit(const InputState &state, float rx, float ry)
+void OrbitCameraController::orbit(float rx, float ry)
 {
     camera()->panAboutViewCenter(rx * lookSpeed(), {0, 1, 0});
     camera()->tiltAboutViewCenter(ry * lookSpeed());
 }
 
-void OrbitCameraController::zoom(const InputState &state, float dz)
+void OrbitCameraController::zoom(float dz)
 {
     const auto camera = this->camera();
     const auto zoomDistance = (camera->viewCenter() - camera->position()).lengthSquared();
