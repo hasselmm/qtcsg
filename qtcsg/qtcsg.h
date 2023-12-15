@@ -189,6 +189,8 @@ public:
     /// by `matrix` applied to all the polygons of this geometry.
     [[nodiscard]] Geometry transformed(const QMatrix4x4 &matrix) const;
 
+    [[nodiscard]] static Geometry fromExpression(QString expression);
+
 private:
     QList<Polygon> m_polygons;
     Error m_error;
