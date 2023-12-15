@@ -11,6 +11,8 @@ namespace {
 
 Q_LOGGING_CATEGORY(lcInputOutput, "qtcsg.io");
 
+#if defined(__cpp_concepts) && __cpp_concepts >= 202002L
+
 template<class T>
 concept HasEmplaceBack = requires(T *object) {
     object->emplaceBack(typename T::value_type{});
@@ -28,6 +30,16 @@ void emplaceBack(QList<T> &list, Args... args)
         list.append(T{std::forward<Args>(args)...});
     }
 }
+
+#else
+
+template<class T, typename... Args>
+void emplaceBack(QList<T> &list, Args... args)
+{
+    list.append(T{std::forward<Args>(args)...});
+}
+
+#endif
 
 // http://www.geomview.org/docs/html/OFF.html
 class OffFileFormat : public FileFormat<Geometry>

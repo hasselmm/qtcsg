@@ -28,7 +28,7 @@
 namespace QtCSG::Utils {
 
 /// Resolve the key name for `value` from enumeration `T`.
-template<typename T> requires std::is_enum_v<T>
+template<typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
 [[nodiscard]] inline const char *keyName(T value)
 {
     static const auto metaEnum = QMetaEnum::fromType<T>();

@@ -70,12 +70,6 @@ template<typename... Args>
     return ConcatBuffer{args...};
 }
 
-/// This concept provides that the given type has a fields() method.
-template<class T>
-concept HasFieldsMethod = requires(T *instance) {
-    instance->fields();
-};
-
 } // namespace QtCSG::Tests::Internal
 
 namespace QTest {
@@ -112,7 +106,15 @@ inline bool qCompare(const QMatrix4x4 &a,const QMatrix4x4 &b,
 
 } // namespace QTest
 
+#if defined(__cpp_concepts) && __cpp_concepts >= 202002L
+
 namespace QtCSG::Tests::Internal {
+
+/// This concept provides that the given type has a fields() method.
+template<class T>
+concept HasFieldsMethod = requires(T *instance) {
+    instance->fields();
+};
 
 /// Compares two objects with a fields() method that returns a tuple.
 /// This is useful to enable fully compare of the fields without
@@ -160,5 +162,7 @@ inline bool qCompare(const T &a, const T &b,
 }
 
 } // QTest
+
+#endif // defined(__cpp_concepts) && __cpp_concepts >= 202002L
 
 #endif // QTCSGTEST_H
