@@ -22,6 +22,7 @@
 #include <QVariant>
 #include <QVector3D>
 
+#include <any>
 #include <memory>
 
 namespace Qt3DCSG {
@@ -44,6 +45,35 @@ enum class Error
 
 Q_ENUM_NS(Error)
 
+/// The following inspection interface helps visualizing, understanding,
+/// and debugging the boolean geometry operations above. An inspection
+/// handler installed via `Inspection::setHandler()` will called for
+/// any of the operations listed in `Inspection::Event`. By returning
+/// `Inspection::Result::Abort` the geometry operation can be interrupted
+/// at that point. To end inspection simply reset the handler to a
+/// default constructed value of `Inspection::Handler`, or nullptr.
+struct Inspection
+{
+    enum class Event {
+        Build,
+        Invert,
+        Clip,
+    };
+
+    enum class Result
+    {
+        Proceed,
+        Abort,
+    };
+
+    using Handler = std::function<Result(Event, std::any)>;
+    Handler handler;
+
+    Q_GADGET
+    Q_ENUM(Event)
+    Q_ENUM(Result)
+};
+
 /// Generic options for the various algorithms presented here.
 ///
 /// They can be build using the | operator:
@@ -60,23 +90,27 @@ struct Options
 
     Q_DECLARE_FLAGS(Flags, Flag)
 
-    struct RecursionLimit {
-        int value = 1024;
+    struct RecursionLimit
+    {
+        int value = 32768;
     };
 
-    struct Epsilon {
+    struct Epsilon
+    {
         float value = 1e-5f;
     };
 
     Flags flags = Flags{CheckConvexity | CheckPolygonNormals | CleanupPolygons};
     int recursionLimit = RecursionLimit{}.value;
     float epsilon = Epsilon{}.value;
+    Inspection::Handler inspection;
 
     Options() noexcept = default;
     Options(Flag newFlag) noexcept : flags{newFlag} {}
     Options(Flags newFlags) noexcept : flags{newFlags} {}
     Options(RecursionLimit newLimit) noexcept : recursionLimit{newLimit.value} {}
     Options(Epsilon newEpsilon) noexcept : epsilon{newEpsilon.value} {}
+    Options(Inspection::Handler newHandler) noexcept : inspection{std::move(newHandler)} {}
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(Options::Flags)
@@ -96,6 +130,12 @@ inline Options operator|(Options &&options, Options::RecursionLimit newLimit) no
 inline Options operator|(Options &&options, Options::Epsilon newEpsilon) noexcept
 {
     options.epsilon = newEpsilon.value;
+    return options;
+}
+
+inline Options operator|(Options &&options, Inspection::Handler newHandler) noexcept
+{
+    options.inspection = std::move(newHandler);
     return options;
 }
 
@@ -264,8 +304,8 @@ public:
     [[nodiscard]] auto back() const { return m_back; }
 
     /// Convert solid space to empty space and empty space to solid space.
-    void invert();
-    [[nodiscard]] Node inverted() const;
+    [[nodiscard]] Node inverted(const Options &options) const;
+    void invert(const Options &options);
 
     /// Recursively remove all polygons in `polygons` that are inside this BSP tree.
     [[nodiscard]] QList<Polygon> clipPolygons(QList<Polygon> polygons,
@@ -380,6 +420,7 @@ private:
 [[nodiscard]] inline Polygon operator*(const QMatrix4x4 &m, const Polygon &p) { return p.transformed(m); }
 [[nodiscard]] inline Geometry operator*(const QMatrix4x4 &m, const Geometry &g) { return g.transformed(m); }
 
+/// Allow to dump the library's objects via Qt's logging mechanism.
 QDebug operator<<(QDebug debug, Geometry geometry);
 QDebug operator<<(QDebug debug, Plane plane);
 QDebug operator<<(QDebug debug, Polygon polygon);

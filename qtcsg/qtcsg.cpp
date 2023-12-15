@@ -581,9 +581,9 @@ Geometry merge(Geometry lhs, Geometry rhs, Options options)
 
     a.clipTo(b, options);
     b.clipTo(a, options);
-    b.invert();
+    b.invert(options);
     b.clipTo(a, options);
-    b.invert();
+    b.invert(options);
 
     if (const auto error = a.build(b.allPolygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
@@ -609,18 +609,18 @@ Geometry subtract(Geometry lhs, Geometry rhs, Options options)
         reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
-    a.invert();
+    a.invert(options);
     a.clipTo(b, options);
     b.clipTo(a, options);
-    b.invert();
+    b.invert(options);
     b.clipTo(a, options);
-    b.invert();
+    b.invert(options);
 
     if (const auto error = a.build(b.allPolygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
-    a.invert();
+    a.invert(options);
 
     return Geometry{a.allPolygons()};
 }
@@ -642,9 +642,9 @@ Geometry intersect(Geometry lhs, Geometry rhs, Options options)
         reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
-    a.invert();
+    a.invert(options);
     b.clipTo(a, options);
-    b.invert();
+    b.invert(options);
     a.clipTo(b, options);
     b.clipTo(a, options);
 
@@ -652,7 +652,7 @@ Geometry intersect(Geometry lhs, Geometry rhs, Options options)
         reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
-    a.invert();
+    a.invert(options);
 
     return Geometry{a.allPolygons()};
 }
@@ -668,24 +668,28 @@ std::variant<Node, Error> Node::fromPolygons(QList<Polygon> polygons, Options op
     return {std::move(node)};
 }
 
-void Node::invert()
+void Node::invert(const Options &options)
 {
+    if (Q_UNLIKELY(options.inspection))
+        if (options.inspection(Inspection::Event::Invert, {}) == Inspection::Result::Abort)
+            return;
+
     std::for_each(m_polygons.begin(), m_polygons.end(), &flip<Polygon>);
 
     m_plane.flip();
 
     if (m_front)
-        m_front->invert();
+        m_front->invert(options);
     if (m_back)
-        m_back->invert();
+        m_back->invert(options);
 
     std::swap(m_front, m_back);
 }
 
-Node Node::inverted() const
+Node Node::inverted(const Options &options) const
 {
     auto node = *this;
-    node.invert();
+    node.invert(options);
     return node;
 }
 
@@ -713,6 +717,10 @@ QList<Polygon> Node::clipPolygons(QList<Polygon> polygons, const Options &option
 
 void Node::clipTo(const Node &bsp, const Options &options)
 {
+    if (Q_UNLIKELY(options.inspection))
+        if (options.inspection(Inspection::Event::Clip, bsp) == Inspection::Result::Abort)
+            return;
+
     m_polygons = bsp.clipPolygons(std::move(m_polygons), options);
 
     if (m_front)
@@ -735,10 +743,14 @@ QList<Polygon> Node::allPolygons() const
 
 Error Node::build(QList<Polygon> polygons, int level, const Options &options)
 {
-    if (level == options.recursionLimit) {
+    if (Q_UNLIKELY(level >= options.recursionLimit)) {
         qWarning(lcNode, "Maximum recursion level reached");
         return Error::RecursionError;
     }
+
+    if (Q_UNLIKELY(options.inspection))
+        if (options.inspection(Inspection::Event::Build, {}) == Inspection::Result::Abort)
+            return Error::NoError; // FIXME: AbortedError?
 
     if (polygons.isEmpty())
         return Error::NoError;

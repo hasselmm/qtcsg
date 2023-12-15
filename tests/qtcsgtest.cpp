@@ -487,72 +487,106 @@ private slots:
         QCOMPARE(parsedGeometry.polygons(), expectedGeometry.polygons());
     }
 
+    void testOptions_data()
+    {
+        const auto defaults = Options{};
+        const auto makeOptions = [](Options o) { return o; };
+
+        QTest::addColumn<Options>                       ("actualOptions");
+        QTest::addColumn<Options::Flags>                ("expectedFlags");
+        QTest::addColumn<int>                           ("expectedRecursionLimit");
+        QTest::addColumn<float>                         ("expectedEpsilon");
+        QTest::addColumn<bool>                          ("expectedInspection");
+
+        QTest::newRow("single-flag")
+            << makeOptions(Options::CheckConvexity)
+            << Options::Flags{Options::CheckConvexity}
+            << defaults.recursionLimit
+            << defaults.epsilon
+            << false;
+
+        QTest::newRow("multiple-flags")
+            << makeOptions(Options::CheckPolygonNormals | Options::CheckConvexity)
+            << Options::Flags{Options::CheckPolygonNormals | Options::CheckConvexity}
+            << defaults.recursionLimit
+            << defaults.epsilon
+            << false;
+
+        QTest::newRow("recursion-limit")
+            << makeOptions(Options::RecursionLimit{1})
+            << defaults.flags
+            << 1
+            << defaults.epsilon
+            << false;
+
+        QTest::newRow("epsilon")
+            << makeOptions(Options::Epsilon{0.1f})
+            << defaults.flags
+            << defaults.recursionLimit
+            << 0.1f
+            << false;
+
+        QTest::newRow("single-flag+recursion-limit")
+            << makeOptions(Options::CleanupPolygons
+                           | Options::RecursionLimit{2})
+            << Options::Flags{Options::CleanupPolygons}
+            << 2
+            << defaults.epsilon
+            << false;
+
+        QTest::newRow("single-flag+recursion-limit+epsilon")
+            << makeOptions(Options::CleanupPolygons
+                           | Options::RecursionLimit{3}
+                           | Options::Epsilon{0.2f})
+            << Options::Flags{Options::CleanupPolygons}
+            << 3
+            << 0.2f
+            << false;
+
+        QTest::newRow("multiple-flags+recursion-limit+epsilon")
+            << makeOptions(Options::CheckPolygonNormals
+                           | Options::CleanupPolygons
+                           | Options::RecursionLimit{4}
+                           | Options::Epsilon{0.3f})
+            << Options::Flags{Options::CheckPolygonNormals | Options::CleanupPolygons}
+            << 4
+            << 0.3f
+            << false;
+
+        QTest::newRow("multiple-flags+recursion-limit+epsilon+inspect")
+            << makeOptions(Options::CheckPolygonNormals
+                           | Options::CleanupPolygons
+                           | Options::RecursionLimit{5}
+                           | Options::Epsilon{0.4f}
+                           | [](Inspection::Event, std::any) {
+                                 return Inspection::Result::Abort;
+                             })
+            << Options::Flags{Options::CheckPolygonNormals | Options::CleanupPolygons}
+            << 5
+            << 0.4f
+            << true;
+    }
+
     void testOptions()
     {
-        using enum Options::Flag;
+        const QFETCH(Options,                   actualOptions);
 
-        using RecursionLimit = Options::RecursionLimit;
-        using Epsilon        = Options::Epsilon;
+        const QFETCH(Options::Flags,            expectedFlags);
+        QCOMPARE(actualOptions.flags,           expectedFlags);
 
-        // simulate a function acception an option argument
-        const auto fakeCall = [](Options o) { return o; };
-        constexpr auto defaults = Options{};
+        const QFETCH(int,                       expectedRecursionLimit);
+        QCOMPARE(actualOptions.recursionLimit,  expectedRecursionLimit);
 
-        // check options from single flag
-        QCOMPARE(fakeCall(CheckConvexity).
-                 flags, CheckConvexity);
-        QCOMPARE(fakeCall(CheckConvexity).
-                 recursionLimit, defaults.recursionLimit);
-        QCOMPARE(fakeCall(CheckConvexity).
-                 epsilon, defaults.epsilon);
+        const QFETCH(float,                     expectedEpsilon);
+        QCOMPARE(actualOptions.epsilon,         expectedEpsilon);
 
-        // check options from multiple flags
-        QCOMPARE(fakeCall(CheckPolygonNormals | CheckConvexity).
-                 flags, CheckPolygonNormals | CheckConvexity);
-        QCOMPARE(fakeCall(CheckPolygonNormals | CheckConvexity).
-                 recursionLimit, defaults.recursionLimit);
-        QCOMPARE(fakeCall(CheckPolygonNormals | CheckConvexity).
-                 epsilon, defaults.epsilon);
+        const QFETCH(bool,                      expectedInspection);
+        QCOMPARE(!!actualOptions.inspection,    expectedInspection);
 
-        // check options from recursion limit
-        QCOMPARE(fakeCall(RecursionLimit{1}).
-                 flags, defaults.flags);
-        QCOMPARE(fakeCall(RecursionLimit{1}).
-                 recursionLimit, 1);
-        QCOMPARE(fakeCall(RecursionLimit{1}).
-                 epsilon, defaults.epsilon);
-
-        // check options from epsilon
-        QCOMPARE(fakeCall(Epsilon{5}).
-                 flags, defaults.flags);
-        QCOMPARE(fakeCall(Epsilon{5}).
-                 recursionLimit, defaults.recursionLimit);
-        QCOMPARE(fakeCall(Epsilon{5}).
-                 epsilon, 5);
-
-        // check options from single flag, and recursion limit
-        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2}).
-                 flags, Options::CleanupPolygons);
-        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2}).
-                 recursionLimit, 2);
-        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2}).
-                 epsilon, defaults.epsilon);
-
-        // check options from single flag and recursion limit, and epsilon
-        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2} | Epsilon{7}).
-                 flags, Options::CleanupPolygons);
-        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2} | Epsilon{7}).
-                 recursionLimit, 2);
-        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2} | Epsilon{7}).
-                 epsilon, 7);
-
-        // check options from multiple flags, recursion limit, and epsilon
-        QCOMPARE(fakeCall(CheckPolygonNormals | CleanupPolygons | RecursionLimit{4} | Epsilon{9}).
-                 flags, (CheckPolygonNormals | CleanupPolygons));
-        QCOMPARE(fakeCall(CheckPolygonNormals | CleanupPolygons | Epsilon{9} | RecursionLimit{4}).
-                 recursionLimit, 4);
-        QCOMPARE(fakeCall(Epsilon{9} | CheckPolygonNormals | CleanupPolygons | RecursionLimit{4}).
-                 epsilon, 9);
+        if (actualOptions.inspection) {
+            QCOMPARE(actualOptions.inspection(Inspection::Event::Build, {}),
+                     Inspection::Result::Abort);
+        }
     }
 };
 
