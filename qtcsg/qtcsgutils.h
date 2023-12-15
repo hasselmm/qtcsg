@@ -23,9 +23,19 @@
 
 #include <QMetaEnum>
 
+#ifdef  __cpp_lib_source_location
 #include <source_location>
+#else
+#include <experimental/source_location>
+#endif
 
 namespace QtCSG::Utils {
+
+#ifdef  __cpp_lib_source_location
+using SourceLocation = std::source_location;
+#else
+using SourceLocation = std::experimental::source_location;
+#endif
 
 /// Resolve the key name for `value` from enumeration `T`.
 template<typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
@@ -38,7 +48,7 @@ template<typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
 /// Check if `error` indicates a problem. If there is a problem, the function returns `true`.
 /// Additionally `message` is logged to `category`; together with a description of `error`.
 [[nodiscard]] bool reportError(const QLoggingCategory &category, Error error, const char *message,
-                               std::source_location location = std::source_location::current());
+                               SourceLocation location = SourceLocation::current());
 
 /// Enable colorful logging, so that information is easier to understand.
 void enabledColorfulLogging();
