@@ -23,7 +23,7 @@
 namespace QtCSG::Utils {
 
 bool reportError(const QLoggingCategory &category, Error error,
-                 const char *message, std::source_location location)
+                 const char *message, SourceLocation location)
 {
     if (Q_LIKELY(error == Error::NoError))
         return false;
