@@ -326,6 +326,113 @@ private slots:
         QCOMPARE(transformed.normal(),   expectedResult.normal());
         QCOMPARE(transformed,            expectedResult);
     }
+
+    void testFromExpression_data()
+    {
+        QTest::addColumn<QString>("expression");
+        QTest::addColumn<Geometry>("expectedGeometry");
+        QTest::addColumn<QString>("expectedWarning");
+
+        QTest::newRow("cube:default")
+            << "cube()"
+            << cube()
+            << "";
+        QTest::newRow("cube:center")
+            << "cube(center=[0.5,1,2.])"
+            << cube({0.5, 1, 2.0})
+            << "";
+        QTest::newRow("cube:radius:scalar")
+            << "cube(r=3.1)"
+            << cube({}, 3.1)
+            << "";
+        QTest::newRow("cube:radius:vector")
+            << "cube(r=[1,2.2,3.5])"
+            << cube({}, {1, 2.2, 3.5})
+            << "";
+        QTest::newRow("cube:center+radius")
+            << "cube(r=5, center=[-1,+2,-3.0])"
+            << cube({-1, 2, -3}, 5)
+            << "";
+
+        QTest::newRow("cylinder:default")
+            << "cylinder()"
+            << cylinder()
+            << "";
+        QTest::newRow("cylinder:start")
+            << "cylinder(start=[0,0,1])"
+            << cylinder({0, 0, 1}, {0, 0, 0})
+            << "";
+        QTest::newRow("cylinder:end+r")
+            << "cylinder(end=[0,0,-1], r=2)"
+            << cylinder({0, 0, 0}, {0, 0, -1}, 2)
+            << "";
+        QTest::newRow("cylinder:start+end+r+slices")
+            << "cylinder(start=[1,1,1], end=[-1,-1,-1], r=1.5, slices=5)"
+            << cylinder({1, 1, 1}, {-1, -1, -1}, 1.5f, 5)
+            << "";
+        QTest::newRow("cylinder:center")
+            << "cylinder(center=[1,2,3])"
+            << cylinder({1, 2, 3})
+            << "";
+        QTest::newRow("cylinder:center+r")
+            << "cylinder(center=[2,3,4], r=2)"
+            << cylinder({2, 3, 4}, 2, 2)
+            << "";
+        QTest::newRow("cylinder:center+h+r+slices")
+            << "cylinder( center=[ 3, 4, 5 ], h = 6 , r = 7, slices=8 )"
+            << cylinder({3, 4, 5}, 6, 7, 8)
+            << "";
+
+        QTest::newRow("sphere:default")
+            << "sphere()"
+            << sphere()
+            << "";
+        QTest::newRow("sphere:center+radius+slices+stacks")
+            << "sphere(center=[1,2,3], r=4, slices=5, stacks=6)"
+            << sphere({1, 2, 3}, 4, 5, 6)
+            << "";
+
+        QTest::newRow("error:filename")
+            << "/home/you/are/pretty.off"
+            << Geometry{Error::NotSupportedError}
+            << "";
+        QTest::newRow("error:unknown-primitive")
+            << "unknown()"
+            << Geometry{Error::NotSupportedError}
+            << R"*(Unsupported primitive: "unknown")*";
+        QTest::newRow("error:malformed-argument-list")
+            << "cube(bad)"
+            << Geometry{Error::FileFormatError}
+            << R"*(Invalid argument list: "(bad)")*";
+        QTest::newRow("error:unknown-argument")
+            << "cube(unknown=23)"
+            << Geometry{Error::FileFormatError}
+            << R"*(Unsupported argument "unknown" for cube primitive)*";
+        QTest::newRow("error:invalid-type")
+            << "cube(center=42)"
+            << Geometry{Error::FileFormatError}
+            << R"*(Unsupported value type for argument "center" of cube primitive)*";
+        QTest::newRow("error:conflicting-arguments")
+            << "cylinder(start=[1,1,1], center=[0,0,0])"
+            << Geometry{Error::FileFormatError}
+            << R"*(Argument "center" conflicts with arguments )*"
+               R"*("start" and "end" of cylinder primitive)*";
+    }
+
+    void testFromExpression()
+    {
+        const QFETCH(QString, expression);
+        const QFETCH(Geometry, expectedGeometry);
+        const QFETCH(QString, expectedWarning);
+
+        if (!expectedWarning.isEmpty())
+            QTest::ignoreMessage(QtWarningMsg, qUtf8Printable(expectedWarning));
+
+        const auto parsedGeometry = Geometry::fromExpression(expression);
+
+        QCOMPARE(expectedGeometry.error(), expectedGeometry.error());
+        QCOMPARE(parsedGeometry.polygons(), expectedGeometry.polygons());
+    }
 };
 
 } // namespace QtCSG::Tests

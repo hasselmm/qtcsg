@@ -22,14 +22,16 @@
 
 #include <QLoggingCategory>
 
+#include <QRegularExpression>
 #include <cmath>
 
 namespace QtCSG {
 
 namespace {
 
-Q_LOGGING_CATEGORY(lcNode, "qtcsg.node");
-Q_LOGGING_CATEGORY(lcOperator, "qtcsg.operator");
+Q_LOGGING_CATEGORY(lcGeometry,  "qtcsg.geometry");
+Q_LOGGING_CATEGORY(lcNode,      "qtcsg.node");
+Q_LOGGING_CATEGORY(lcOperator,  "qtcsg.operator");
 
 using Utils::reportError;
 
@@ -195,6 +197,214 @@ Geometry Geometry::transformed(const QMatrix4x4 &matrix) const
                    std::back_inserter(transformed), applyMatrix);
 
     return Geometry{std::move(transformed)};
+}
+
+namespace {
+
+struct EnsureValue
+{
+    const QVariantMap &arguments;
+
+    template<typename T>
+    T operator()(const QString &key, T defaultValue = {}) const
+    {
+        return (*this)(arguments.constFind(key), std::move(defaultValue));
+    }
+
+    template<typename T>
+    T operator()(const QVariantMap::ConstIterator &iter, T defaultValue = {}) const
+    {
+        if (iter != arguments.constEnd())
+            return qvariant_cast<T>(*iter);
+
+        return defaultValue;
+    }
+};
+
+Geometry createGeometry(QStringView primitiveName, QVariantMap arguments)
+{
+    const auto value = EnsureValue{arguments};
+
+    if (primitiveName == u"cube") {
+        const auto radius = arguments.value("r", 1.0f);
+
+        if (radius.userType() == qMetaTypeId<QVector3D>()) {
+            return cube(value("center", QVector3D{}),
+                        qvariant_cast<QVector3D>(radius));
+        }
+
+        return cube(value("center", QVector3D{}), radius.toFloat());
+    }
+
+    if (primitiveName == u"cylinder") {
+        const auto start = arguments.constFind("start");
+        const auto end = arguments.constFind("end");
+
+        if (start != arguments.constEnd() || end != arguments.constEnd()) {
+            static const auto conflicts = std::array<QString, 2>{"center", "h"};
+
+            for (const auto &conflictingName: conflicts) {
+                if (arguments.contains(conflictingName)) {
+                    qCWarning(lcGeometry,
+                              R"(Argument "%ls" conflicts with arguments )"
+                              R"("start" and "end" of %ls primitive)",
+                              qUtf16Printable(conflictingName),
+                              qUtf16Printable(primitiveName.toString()));
+
+                    return Geometry{Error::FileFormatError};
+                }
+            }
+
+            return cylinder(value(start,    QVector3D{}),
+                            value(end,      QVector3D{}),
+                            value("r",      1.0f),
+                            value("slices", 16));
+        } else {
+            return cylinder(value("center", QVector3D{}),
+                            value("h",      2.0f),
+                            value("r",      1.0f),
+                            value("slices", 16));
+        }
+    }
+
+    if (primitiveName == u"sphere") {
+        return sphere(value("center",   QVector3D{}),
+                      value("r",        1.0f),
+                      value("slices",   16),
+                      value("stacks",   8));
+    }
+
+    qCCritical(lcGeometry, R"(Unsupported primitive type: "%ls")",
+               qUtf16Printable(primitiveName.toString()));
+
+    return Geometry{Error::FileFormatError};
+}
+
+using ArgumentTypeMap = QMap<QString, QList<int>>;
+
+QVariant parseArgument(const QString &primitive,
+                       const QString &argName,
+                       const QRegularExpressionMatch &match,
+                       const ArgumentTypeMap &argTypeMap)
+{
+    const auto valueSpec = argTypeMap.constFind(argName);
+
+    if (valueSpec == argTypeMap.constEnd()) {
+        qCWarning(lcGeometry, R"(Unsupported argument "%ls" for %ls primitive)",
+                  qUtf16Printable(argName), qUtf16Printable(primitive));
+        return {};
+    }
+
+    auto argValue = QVariant{};
+
+    if (const auto scalar = match.captured(u"scalar"); !scalar.isEmpty()) {
+        argValue = scalar.toFloat();
+    } else if (const auto x = match.captured(u"vecx"); !x.isEmpty()) {
+        if (const auto y = match.captured(u"vecy"); !x.isEmpty())
+            if (const auto z = match.captured(u"vecz"); !x.isEmpty())
+                argValue = QVector3D{x.toFloat(), y.toFloat(), z.toFloat()};
+    }
+
+    if (!valueSpec->contains(argValue.userType())) {
+        qCWarning(lcGeometry, R"(Unsupported value type for argument "%ls" of %ls primitive)",
+                  qUtf16Printable(argName), qUtf16Printable(primitive));
+        return {};
+    }
+
+    return argValue;
+}
+
+} // namespace
+
+Geometry Geometry::fromExpression(QString expression)
+{
+    static const auto s_callPattern = QRegularExpression{R"(^(?<name>[a-z]+)\((?<args>[^)]*\))$)"};
+    static const auto s_argPattern  = QRegularExpression{R"(\s*(?<name>[a-z]+)\s*=\s*(?:)"
+                                                         R"((?<scalar>[+-]?\d+(?:\.\d*)?)|\[)"
+                                                         R"(\s*(?<vecx>[+-]?\d+(?:\.\d*)?)\s*,)"
+                                                         R"(\s*(?<vecy>[+-]?\d+(?:\.\d*)?)\s*,)"
+                                                         R"(\s*(?<vecz>[+-]?\d+(?:\.\d*)?)\s*)"
+                                                         R"(\])\s*[,)])"};
+
+    Q_ASSERT_X(s_callPattern.isValid(), "s_callPattern", qPrintable(s_callPattern.errorString()));
+    Q_ASSERT_X(s_argPattern.isValid(), "s_argPattern", qPrintable(s_argPattern.errorString()));
+
+    static constexpr auto scalarType = qMetaTypeId<float>();
+    static constexpr auto vectorType = qMetaTypeId<QVector3D>();
+
+    static const auto s_supportedArguments = QMap<QString, ArgumentTypeMap> {
+        {"cube", {{"center", {vectorType}},
+                  {"r",      {scalarType, vectorType}}}},
+
+        {"cylinder", {{"start",  {vectorType}},
+                      {"center", {vectorType}},
+                      {"end",    {vectorType}},
+                      {"h",      {scalarType}},
+                      {"r",      {scalarType}},
+                      {"slices", {scalarType}}}},
+
+        {"sphere", {{"center", {vectorType}},
+                    {"r",      {scalarType}},
+                    {"slices", {scalarType}},
+                    {"stacks", {scalarType}}}},
+    };
+
+    const auto parsedExpression = s_callPattern.match(expression);
+
+    if (!parsedExpression.hasMatch())
+        return Geometry{Error::FileFormatError};
+
+    auto primitive = parsedExpression.captured(u"name");
+    const auto argSpec = s_supportedArguments.constFind(primitive);
+
+    if (argSpec == s_supportedArguments.constEnd()) {
+        qCWarning(lcGeometry, R"(Unsupported primitive: "%ls")",
+                  qUtf16Printable(primitive));
+
+        return Geometry{Error::NotSupportedError};
+    }
+
+    const auto argList = parsedExpression.capturedView(u"args");
+    auto arguments = QVariantMap{};
+
+    if (argList != u")") {
+        if (auto it = s_argPattern.globalMatch(argList); it.hasNext()) {
+            auto expectedStart = 0;
+
+            while (it.hasNext()) {
+                const auto match = it.next();
+
+                if (match.capturedStart() != expectedStart) {
+                    const auto length = match.capturedStart() - expectedStart;
+                    const auto expression = argList.mid(expectedStart, length);
+                    qCWarning(lcGeometry, R"(Unexpected expression: "%ls")",
+                              qUtf16Printable(expression.toString()));
+                    return Geometry{Error::FileFormatError};
+                }
+
+                expectedStart = match.capturedEnd();
+                auto argName = match.captured(u"name");
+
+                if (arguments.contains(argName)) {
+                    qCWarning(lcGeometry, R"(Duplicate argument "%ls")", qUtf16Printable(argName));
+                    return Geometry{Error::FileFormatError};
+                }
+
+                auto argValue = parseArgument(primitive, argName, match, *argSpec);
+
+                if (argValue.isNull())
+                    return Geometry{Error::FileFormatError};
+
+                arguments.insert(std::move(argName), std::move(argValue));
+            }
+        } else {
+            qCWarning(lcGeometry, R"(Invalid argument list: "(%ls")",
+                      qUtf16Printable(argList.toString()));
+            return Geometry{Error::FileFormatError};
+        }
+    }
+
+    return createGeometry(std::move(primitive), std::move(arguments));
 }
 
 Geometry cube(QVector3D center, QVector3D size)
