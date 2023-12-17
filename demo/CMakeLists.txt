@@ -2,8 +2,8 @@ qt_add_library(
     QtCSGAppSupport STATIC
     qtcsgappsupport.cpp
     qtcsgappsupport.h
-    orbitalcameracontroller.cpp
-    orbitalcameracontroller.h
+    orbitcameracontroller.cpp
+    orbitcameracontroller.h
     wireframematerial.cpp
     wireframematerial.h
     wireframematerial.qrc

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "qtcsgappsupport.h"
-#include "orbitalcameracontroller.h"
+#include "orbitcameracontroller.h"
 #include "wireframematerial.h"
 
 #include <qtcsg/qtcsg.h>
