@@ -200,15 +200,6 @@ public:
 
     void flip();
 
-    /// Split this polygon by `plane` if needed, then put the polygon or polygon
-    /// fragments in the appropriate lists. Coplanar polygons go into either
-    /// `coplanarFront` or `coplanarBack` depending on their orientation with
-    /// respect to this plane. Polygons in front or in back of this plane go into
-    /// either `front` or `back`.
-    void split(const Plane &plane,
-               QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
-               QList<Polygon> *front, QList<Polygon> *back, Options options = {}) const;
-
     /// Returns a new polygon which has the transformations described
     /// by `matrix` applied to all vertices of this polygon.
     [[nodiscard]] Polygon transformed(const QMatrix4x4 &matrix) const;

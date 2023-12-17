@@ -28,6 +28,15 @@ namespace QtCSG::Tests {
 
 using std::make_pair;
 
+class Helper
+{
+public:
+    static void split(const Polygon &polygon, const Plane &plane,
+                      QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
+                      QList<Polygon> *front, QList<Polygon> *back,
+                      Options options = {});
+};
+
 class Test : public QObject
 {
     Q_OBJECT
@@ -207,7 +216,7 @@ private slots:
         auto front = QList<Polygon>{};
         auto back = QList<Polygon>{};
 
-        poly.split(plane, &cpf, &cpb, &front, &back);
+        Helper::split(poly, plane, &cpf, &cpb, &front, &back);
 
         QCOMPARE(cpf.length(), 0);
         QCOMPARE(cpb.length(), 0);
@@ -232,7 +241,7 @@ private slots:
         auto front = QList<Polygon>{};
         auto back = QList<Polygon>{};
 
-        poly.split(plane, &cpf, &cpb, &front, &back);
+        Helper::split(poly, plane, &cpf, &cpb, &front, &back);
 
         QCOMPARE(cpf.length(), 0);
         QCOMPARE(cpb.length(), 0);
@@ -258,7 +267,7 @@ private slots:
         auto front = QList<Polygon>{};
         auto back = QList<Polygon>{};
 
-        poly.split(plane, &cpf, &cpb, &front, &back);
+        Helper::split(poly, plane, &cpf, &cpb, &front, &back);
 
         QCOMPARE(cpf.length(), 0);
         QCOMPARE(cpb.length(), 0);

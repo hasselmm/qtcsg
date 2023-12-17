@@ -52,6 +52,94 @@ void flip(T &o)
     return d >= epsilon;
 }
 
+/// Split `polygon` by `plane` if needed, then put the polygon or polygon
+/// fragments in the appropriate lists. Coplanar polygons go into either
+/// `coplanarFront` or `coplanarBack` depending on their orientation with
+/// respect to this plane. Polygons in front or in back of this plane go into
+/// either `front` or `back`.
+void split(const Polygon &polygon, const Plane &plane,
+           QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
+           QList<Polygon> *front, QList<Polygon> *back,
+           const Options &options)
+{
+    enum VertexType {
+        Coplanar = 0,
+        Front = (1 << 0),
+        Back = (1 << 1),
+        Spanning = Front | Back
+    };
+
+    const auto vertices = polygon.vertices();
+    const auto normal = polygon.plane().normal();
+    const auto epsilon = options.epsilon;
+
+    // Classify each point as well as the entire polygon into one of the above four classes.
+    auto polygonType = Coplanar;
+    auto vertexTypes = std::vector<VertexType>{};
+    vertexTypes.reserve(vertices.size());
+
+    for (const auto &v: vertices) {
+        const auto t = dotProduct(plane.normal(), v.position()) - plane.w();
+        const auto type = (t < -epsilon) ? Back : (t > epsilon) ? Front : Coplanar;
+        polygonType = static_cast<VertexType>(polygonType | type);
+        vertexTypes.emplace_back(type);
+    }
+
+    // Put the polygon in the correct list, splitting it when necessary.
+    switch (polygonType) {
+    case Coplanar:
+        if (dotProduct(plane.normal(), normal) > 0)
+            coplanarFront->append(polygon);
+        else
+            coplanarBack->append(polygon);
+
+        break;
+
+    case Front:
+        front->append(polygon);
+        break;
+
+    case Back:
+        back->append(polygon);
+        break;
+
+    case Spanning:
+        auto f = QList<Vertex>{};
+        auto b = QList<Vertex>{};
+
+        for (auto i = 0; i < vertices.count(); ++i) {
+            const auto j = (i + 1) % vertices.count();
+
+            const auto ti = vertexTypes[i];
+            const auto tj = vertexTypes[j];
+            const auto vi = vertices[i];
+            const auto vj = vertices[j];
+
+            if (ti != Back)
+                f.append(vi);
+            if (ti != Front)
+                b.append(vi);
+
+            if ((ti | tj) == Spanning) {
+                const auto t = (plane.w()
+                                - dotProduct(plane.normal(), vi.position()))
+                               / dotProduct(plane.normal(), vj.position() - vi.position());
+                const auto v = vi.interpolated(vj, t);
+
+                f.append(v);
+                b.append(v);
+            }
+        }
+
+        if (f.count() >= 3)
+            front->append(Polygon{std::move(f), polygon.shared()});
+        if (b.count() >= 3)
+            back->append(Polygon{std::move(b), polygon.shared()});
+
+        break;
+    }
+}
+
 } // namespace
 
 void Vertex::flip()
@@ -125,85 +213,6 @@ Polygon Polygon::transformed(const QMatrix4x4 &matrix) const
                    std::back_inserter(transformed), applyMatrix);
 
     return Polygon{std::move(transformed)};
-}
-
-void Polygon::split(const Plane &plane,
-                    QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
-                    QList<Polygon> *front, QList<Polygon> *back, Options options) const
-{
-    enum VertexType {
-        Coplanar = 0,
-        Front = (1 << 0),
-        Back = (1 << 1),
-        Spanning = Front | Back
-    };
-
-    // Classify each point as well as the entire polygon into one of the above four classes.
-    auto polygonType = Coplanar;
-    auto vertexTypes = std::vector<VertexType>{};
-    vertexTypes.reserve(m_vertices.size());
-    const auto epsilon = options.epsilon;
-
-    for (const auto &v: m_vertices) {
-        const auto t = dotProduct(plane.normal(), v.position()) - plane.w();
-        const auto type = (t < -epsilon) ? Back : (t > epsilon) ? Front : Coplanar;
-        polygonType = static_cast<VertexType>(polygonType | type);
-        vertexTypes.emplace_back(type);
-    }
-
-    // Put the polygon in the correct list, splitting it when necessary.
-    switch (polygonType) {
-    case Coplanar:
-        if (dotProduct(plane.normal(), m_plane.normal()) > 0)
-            coplanarFront->append(*this);
-        else
-            coplanarBack->append(*this);
-
-        break;
-
-    case Front:
-        front->append(*this);
-        break;
-
-    case Back:
-        back->append(*this);
-        break;
-
-    case Spanning:
-        auto f = QList<Vertex>{};
-        auto b = QList<Vertex>{};
-
-        for (auto i = 0; i < m_vertices.count(); ++i) {
-              const auto j = (i + 1) % m_vertices.count();
-
-              const auto ti = vertexTypes[i];
-              const auto tj = vertexTypes[j];
-              const auto vi = m_vertices[i];
-              const auto vj = m_vertices[j];
-
-              if (ti != Back)
-                  f.append(vi);
-              if (ti != Front)
-                  b.append(vi);
-
-              if ((ti | tj) == Spanning) {
-                  const auto t = (plane.w()
-                                  - dotProduct(plane.normal(), vi.position()))
-                                  / dotProduct(plane.normal(), vj.position() - vi.position());
-                  const auto v = vi.interpolated(vj, t);
-
-                  f.append(v);
-                  b.append(v);
-              }
-        }
-
-        if (f.count() >= 3)
-            front->append(Polygon{std::move(f), m_shared});
-        if (b.count() >= 3)
-            back->append(Polygon{std::move(b), m_shared});
-
-        break;
-    }
 }
 
 Geometry Geometry::inversed() const
@@ -689,7 +698,7 @@ QList<Polygon> Node::clipPolygons(QList<Polygon> polygons, const Options &option
     auto back = QList<Polygon>{};
 
     for (const auto &p: polygons)
-        p.split(m_plane, &front, &back, &front, &back, options);
+        split(p, m_plane, &front, &back, &front, &back, options);
 
     if (m_front)
         front = m_front->clipPolygons(front, options);
@@ -742,7 +751,7 @@ Error Node::build(QList<Polygon> polygons, int level, const Options &options)
     auto back = QList<Polygon>{};
 
     for (const auto &p: polygons)
-        p.split(m_plane, &m_polygons, &m_polygons, &front, &back, options);
+        split(p, m_plane, &m_polygons, &m_polygons, &front, &back, options);
 
     if (!front.empty()) {
         if (!m_front)
@@ -812,4 +821,24 @@ QDebug operator<<(QDebug debug, Vertex vertex)
             << ")";
 }
 
+namespace Tests {
+
+/// This class is an obscure attempt to export internal functions for unit tests.
+/// Might be this must be replaced by more regular friend declarations.
+class Helper
+{
+    Q_NEVER_INLINE static void split(const Polygon &polygon, const Plane &plane,
+                                     QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
+                                     QList<Polygon> *front, QList<Polygon> *back, Options options);
+};
+
+/// Defining this function out-of place should convince the compiler to export it.
+void Helper::split(const Polygon &polygon, const Plane &plane,
+                   QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
+                   QList<Polygon> *front, QList<Polygon> *back, Options options)
+{
+    QtCSG::split(polygon, plane, coplanarFront, coplanarBack, front, back, options);
+}
+
+} // namespace Tests
 } // namespace QtCSG
