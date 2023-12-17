@@ -327,7 +327,7 @@ private slots:
         QCOMPARE(transformed,            expectedResult);
     }
 
-    void testFromExpression_data()
+    void testParseGeometry_data()
     {
         QTest::addColumn<QString>("expression");
         QTest::addColumn<Geometry>("expectedGeometry");
@@ -419,7 +419,7 @@ private slots:
                R"*("start" and "end" of cylinder primitive)*";
     }
 
-    void testFromExpression()
+    void testParseGeometry()
     {
         const QFETCH(QString, expression);
         const QFETCH(Geometry, expectedGeometry);
@@ -428,7 +428,7 @@ private slots:
         if (!expectedWarning.isEmpty())
             QTest::ignoreMessage(QtWarningMsg, qUtf8Printable(expectedWarning));
 
-        const auto parsedGeometry = Geometry::fromExpression(expression);
+        const auto parsedGeometry = parseGeometry(expression);
 
         QCOMPARE(expectedGeometry.error(), expectedGeometry.error());
         QCOMPARE(parsedGeometry.polygons(), expectedGeometry.polygons());
