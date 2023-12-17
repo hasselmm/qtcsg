@@ -24,9 +24,32 @@
 
 namespace QtCSG {
 
-[[nodiscard]] constexpr QVector3D lerp(QVector3D a, QVector3D b, float t)
+#define QTCSG_QVECTOR3D_IS_CONSTEXPR (QT_VERSION_MAJOR >= 6)
+
+#if QTCSG_QVECTOR3D_IS_CONSTEXPR
+#define QTCSG_CONSTEXPR_QVECTOR3D constexpr
+#else
+#define QTCSG_CONSTEXPR_QVECTOR3D inline
+#endif
+
+[[nodiscard]] QTCSG_CONSTEXPR_QVECTOR3D QVector3D crossProduct(QVector3D a, QVector3D b) noexcept
+{
+    return QVector3D::crossProduct(std::move(a), std::move(b));
+}
+
+[[nodiscard]] QTCSG_CONSTEXPR_QVECTOR3D float dotProduct(QVector3D a, QVector3D b) noexcept
+{
+    return QVector3D::dotProduct(std::move(a), std::move(b));
+}
+
+[[nodiscard]] constexpr QVector3D lerp(QVector3D a, QVector3D b, float t) noexcept
 {
     return a + (b - a) * t;
+}
+
+[[nodiscard]] inline QVector3D normalVector(QVector3D a, QVector3D b, QVector3D c) noexcept
+{
+    return crossProduct(b - a, c - a).normalized();
 }
 
 [[nodiscard]] inline auto identity()
