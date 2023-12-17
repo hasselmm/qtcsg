@@ -1,5 +1,7 @@
 #include "qtcsgio.h"
 
+#include "qtcsgmath.h"
+
 #include <QFile>
 #include <QFileInfo>
 #include <QLoggingCategory>
@@ -154,7 +156,7 @@ Geometry OffFileFormat::readGeometry(QIODevice *device) const
                     auto a = vertices.at(indices.at(i));
                     auto b = vertices.at(indices.at(j));
                     auto c = vertices.at(indices.at(k));
-                    auto n = QVector3D::crossProduct(b - a, c - a);
+                    auto n = crossProduct(b - a, c - a);
 
                     n.normalize();
 
