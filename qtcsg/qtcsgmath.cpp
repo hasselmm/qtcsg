@@ -20,10 +20,23 @@
 
 namespace QtCSG {
 
-// verify that lerp really is constexpr
+// verify that this module's constexpr functions really areconstexpr
+
+#if QTCSG_QVECTOR3D_IS_CONSTEXPR
+
+static_assert(crossProduct({1, 0, 0}, {0, 1, 0}) == QVector3D{0, 0, 1});
+static_assert(dotProduct  ({1, 0, 0}, {0, 1, 0}) == 0);
+
+#endif // QTCSG_QVECTOR3D_IS_CONSTEXPR
+
+// FIXME: add constexpr length()/sqrt()/hypot() to provide a constexpr normalVector()
+// static_assert(normalVector({0, 0, 0}, {1, 0, 0}, {0, 1, 0}) == QVector3D{0, 0, 1});
+
 static_assert(lerp({0, 0, 0}, {0, 0, 1}, 0.0) == QVector3D{0.0, 0.0, 0.0});
 static_assert(lerp({0, 0, 0}, {0, 0, 1}, 0.5) == QVector3D{0.0, 0.0, 0.5});
 static_assert(lerp({0, 0, 0}, {0, 0, 1}, 1.0) == QVector3D{0.0, 0.0, 1.0});
+
+// implementations
 
 QVector3D findTranslation(const QMatrix4x4 &matrix)
 {

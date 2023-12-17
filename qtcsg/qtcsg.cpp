@@ -65,8 +65,8 @@ Vertex Vertex::interpolated(Vertex other, float t) const
 
 Plane Plane::fromPoints(QVector3D a, QVector3D b, QVector3D c)
 {
-    const auto n = QVector3D::crossProduct(b - a, c - a).normalized();
-    return Plane{n, QVector3D::dotProduct(n, a)};
+    const auto n = normalVector(a, b, c);
+    return Plane{n, dotProduct(n, a)};
 }
 
 void Plane::flip()
@@ -114,7 +114,7 @@ void Polygon::split(const Plane &plane,
     vertexTypes.reserve(m_vertices.size());
 
     for (const auto &v: m_vertices) {
-        const auto t = QVector3D::dotProduct(plane.normal(), v.position()) - plane.w();
+        const auto t = dotProduct(plane.normal(), v.position()) - plane.w();
         const auto type = (t < -epsilon) ? Back : (t > epsilon) ? Front : Coplanar;
         polygonType = static_cast<VertexType>(polygonType | type);
         vertexTypes.emplace_back(type);
@@ -123,7 +123,7 @@ void Polygon::split(const Plane &plane,
     // Put the polygon in the correct list, splitting it when necessary.
     switch (polygonType) {
     case Coplanar:
-        if (QVector3D::dotProduct(plane.normal(), m_plane.normal()) > 0)
+        if (dotProduct(plane.normal(), m_plane.normal()) > 0)
             coplanarFront->append(*this);
         else
             coplanarBack->append(*this);
@@ -157,8 +157,8 @@ void Polygon::split(const Plane &plane,
 
               if ((ti | tj) == Spanning) {
                   const auto t = (plane.w()
-                                  - QVector3D::dotProduct(plane.normal(), vi.position()))
-                                  / QVector3D::dotProduct(plane.normal(), vj.position() - vi.position());
+                                  - dotProduct(plane.normal(), vi.position()))
+                                  / dotProduct(plane.normal(), vj.position() - vi.position());
                   const auto v = vi.interpolated(vj, t);
 
                   f.append(v);
@@ -316,7 +316,7 @@ QVariant parseArgument(const QString &primitive,
 
 } // namespace
 
-Geometry Geometry::fromExpression(QString expression)
+Geometry parseGeometry(QString expression)
 {
     static const auto s_callPattern = QRegularExpression{R"(^(?<name>[a-z]+)\((?<args>[^)]*\))$)"};
     static const auto s_argPattern  = QRegularExpression{R"(\s*(?<name>[a-z]+)\s*=\s*(?:)"
@@ -478,8 +478,8 @@ Geometry cylinder(QVector3D start, QVector3D end, float radius, float slices)
     const auto ray = end - start;
     const auto axisZ = ray.normalized();
     const auto isY = abs(axisZ.y()) > 0.5;
-    const auto axisX = QVector3D::crossProduct({isY ? 1.0f : 0, isY ? 0 : 1.0f, 0}, axisZ).normalized();
-    const auto axisY = QVector3D::crossProduct(axisX, axisZ).normalized();
+    const auto axisX = crossProduct({isY ? 1.0f : 0, isY ? 0 : 1.0f, 0}, axisZ).normalized();
+    const auto axisY = crossProduct(axisX, axisZ).normalized();
     const auto vertexStart = Vertex{start, -axisZ};
     const auto vertexEnd = Vertex{end, axisZ};
 

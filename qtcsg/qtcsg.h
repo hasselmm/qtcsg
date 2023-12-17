@@ -189,8 +189,6 @@ public:
     /// by `matrix` applied to all the polygons of this geometry.
     [[nodiscard]] Geometry transformed(const QMatrix4x4 &matrix) const;
 
-    [[nodiscard]] static Geometry fromExpression(QString expression);
-
 private:
     QList<Polygon> m_polygons;
     Error m_error;
@@ -260,6 +258,14 @@ private:
 /// The `slices` parameter controls the tessellation.
 [[nodiscard]] Geometry cylinder(QVector3D start, QVector3D end, float radius = 1, float slices = 16);
 [[nodiscard]] Geometry cylinder(QVector3D center = {}, float height = 2, float radius = 1, float slices = 16);
+
+/// Constructs a single geometry from simple expression:
+///
+/// "cube()" produces a simple cube.
+/// "sphere(r=1.3)" produces a sphere of radius 1.3.
+///
+/// See `testParseGeometry()` for more examples.
+[[nodiscard]] Geometry parseGeometry(QString expression);
 
 /// Return a new CSG solid representing space in either this solid or in the
 /// solid `csg`. Neither this solid nor the solid `csg` are modified.
