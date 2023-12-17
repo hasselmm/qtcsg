@@ -316,7 +316,7 @@ QVariant parseArgument(const QString &primitive,
 
 } // namespace
 
-Geometry Geometry::fromExpression(QString expression)
+Geometry parseGeometry(QString expression)
 {
     static const auto s_callPattern = QRegularExpression{R"(^(?<name>[a-z]+)\((?<args>[^)]*\))$)"};
     static const auto s_argPattern  = QRegularExpression{R"(\s*(?<name>[a-z]+)\s*=\s*(?:)"
