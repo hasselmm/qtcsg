@@ -12,6 +12,7 @@ endfunction()
 add_library(QtCSGTestSuite OBJECT qtcsgtest.h)
 target_link_libraries(QtCSGTestSuite PUBLIC QtCSG Qt::Test)
 
-qtcsg_add_testsuite(QtCSGTest SOURCES qtcsgtest.cpp LIBRARIES QtCSGAssets)
+qtcsg_add_testsuite(QtCSGAppSupportTest SOURCES qtcsgappsupporttest.cpp LIBRARIES QtCSGAppSupport)
 qtcsg_add_testsuite(QtCSGIOTest SOURCES qtcsgiotest.cpp)
 qtcsg_add_testsuite(QtCSGMathTest SOURCES qtcsgmathtest.cpp)
+qtcsg_add_testsuite(QtCSGTest SOURCES qtcsgtest.cpp LIBRARIES QtCSGAssets)

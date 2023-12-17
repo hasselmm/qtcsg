@@ -21,6 +21,7 @@
 
 #include <QPoint>
 #include <QSize>
+#include <QVariant>
 
 namespace QtCSG::AppSupport {
 
@@ -41,6 +42,69 @@ class StaticInit
 public:
     StaticInit() { T::staticInit(); }
 };
+
+// combines multiple enum classes into one
+// -------------------------------------------------------------------------------------------------
+
+template<class Alias, typename... Enums>
+struct MultiEnum : public std::variant<Enums...>
+{
+    static constexpr bool EnumsArgumentsOnly = (std::is_enum_v<Enums> &&...);
+    static_assert(EnumsArgumentsOnly);
+
+    using std::variant<Enums...>::variant;
+
+    constexpr bool operator==(const MultiEnum &) const = default;
+
+    template<typename T>
+    constexpr bool operator==(const T &v) const
+    {
+        if (!std::holds_alternative<T>(*this))
+            return false;
+
+        return std::get<T>(*this) == v;
+    }
+
+    bool operator==(const QVariant &v) const
+    {
+        registerConverters();
+
+        if (QMetaType::canConvert(v.metaType(), QMetaType::fromType<MultiEnum>()))
+            return qvariant_cast<MultiEnum>(v) == *this;
+
+        return false;
+    }
+
+    operator QVariant() const
+    {
+        registerConverters();
+        return QVariant::fromValue(*this);
+    }
+
+
+    operator const Alias &() const { return *static_cast<const Alias *>(this); }
+    template<typename T> constexpr operator T() const { return std::get<T>(*this); }
+
+    static bool registerConverters()
+    {
+        static const auto s_registered = (QMetaType::registerConverter<MultiEnum, Alias>()
+                                          && QMetaType::registerConverter<Alias, MultiEnum>()
+                                          && (QMetaType::registerConverter<Enums, Alias>() && ...)
+                                          && (QMetaType::registerConverter<Enums, MultiEnum>() && ...)
+                                          && (QMetaType::registerConverter<Alias, Enums>() && ...)
+                                          && (QMetaType::registerConverter<MultiEnum, Enums>() && ...));
+
+        return s_registered;
+    }
+};
+
+template<typename... Enums>
+inline QDebug operator<<(QDebug debug, const MultiEnum<Enums...> &multiEnum)
+{
+    return std::visit([debug](auto v) {
+        return debug << v;
+    }, multiEnum);
+}
 
 } // namespace QtCSG::AppSupport
 
