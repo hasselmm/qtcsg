@@ -22,6 +22,17 @@ set_target_properties(QtCSGDemo PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
+qt_add_executable(QtCSGInspector qtcsginspector.cpp)
+target_link_libraries(QtCSGInspector PRIVATE QtCSGAppSupport QtCSGAssets Qt::Widgets)
+
+set_target_properties(QtCSGInspector PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER qtcsginspector.taschenorakel.de
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE TRUE
+    WIN32_EXECUTABLE TRUE
+)
+
 #if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 ## Define target properties for Android with Qt 6 as:
 ##    set_property(TARGET QtCSG APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
