@@ -32,8 +32,6 @@ namespace QtCSG {
 
 Q_NAMESPACE
 
-constexpr auto defaultRecursionLimit() { return 1024; }
-
 enum class Error
 {
     NoError,
@@ -45,6 +43,61 @@ enum class Error
 };
 
 Q_ENUM_NS(Error)
+
+/// Generic options for the various algorithms presented here.
+///
+/// They can be build using the | operator:
+///
+///     merge(a, b, Options::CheckConvexity | Options::RecursionLimit{2048});
+///
+struct Options
+{
+    enum Flag {
+        CheckConvexity      = (1 << 0),
+        CheckPolygonNormals = (1 << 1),
+        CleanupPolygons     = (1 << 20),
+    };
+
+    Q_DECLARE_FLAGS(Flags, Flag)
+
+    struct RecursionLimit {
+        int value = 1024;
+    };
+
+    struct Epsilon {
+        float value = 1e-5f;
+    };
+
+    Flags flags = Flags{CheckConvexity | CheckPolygonNormals | CleanupPolygons};
+    int recursionLimit = RecursionLimit{}.value;
+    float epsilon = Epsilon{}.value;
+
+    Options() noexcept = default;
+    Options(Flag newFlag) noexcept : flags{newFlag} {}
+    Options(Flags newFlags) noexcept : flags{newFlags} {}
+    Options(RecursionLimit newLimit) noexcept : recursionLimit{newLimit.value} {}
+    Options(Epsilon newEpsilon) noexcept : epsilon{newEpsilon.value} {}
+};
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(Options::Flags)
+
+inline Options operator|(Options &&options, Options::Flag newFlag) noexcept
+{
+    options.flags |= newFlag;
+    return options;
+}
+
+inline Options operator|(Options &&options, Options::RecursionLimit newLimit) noexcept
+{
+    options.recursionLimit = newLimit.value;
+    return options;
+}
+
+inline Options operator|(Options &&options, Options::Epsilon newEpsilon) noexcept
+{
+    options.epsilon = newEpsilon.value;
+    return options;
+}
 
 /// Represents a vertex of a polygon. Use your own vertex class instead of this
 /// one to provide additional features like texture coordinates and vertex
@@ -154,8 +207,7 @@ public:
     /// either `front` or `back`.
     void split(const Plane &plane,
                QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
-               QList<Polygon> *front, QList<Polygon> *back,
-               float epsilon = 1e-5) const;
+               QList<Polygon> *front, QList<Polygon> *back, Options options = {}) const;
 
     /// Returns a new polygon which has the transformations described
     /// by `matrix` applied to all vertices of this polygon.
@@ -178,9 +230,11 @@ public:
     explicit Geometry(Error error = Error::NoError)
         : m_error{error} {}
     explicit Geometry(QList<Polygon> polygons, Error error = Error::NoError)
+        : Geometry{std::move(polygons), Options{}, error} {}
+    explicit Geometry(QList<Polygon> polygons, Options options, Error error = Error::NoError)
         : m_polygons{std::move(polygons)}
         , m_error{error} {
-        validate();
+        validate(options);
     }
 
     [[nodiscard]] auto isEmpty() const { return m_polygons.isEmpty(); }
@@ -195,7 +249,7 @@ public:
     [[nodiscard]] Geometry transformed(const QMatrix4x4 &matrix) const;
 
 private:
-    void validate();
+    void validate(const Options &options);
 
     QList<Polygon> m_polygons;
     Error m_error;
@@ -211,8 +265,7 @@ class Node
 public:
     Node() = default;
 
-    static std::variant<Node, Error> fromPolygons(QList<Polygon> polygons,
-                                                  int limit = defaultRecursionLimit());
+    static std::variant<Node, Error> fromPolygons(QList<Polygon> polygons, Options options = {});
 
     [[nodiscard]] auto plane() const { return m_plane; }
     [[nodiscard]] auto polygons() const { return m_polygons; }
@@ -224,10 +277,11 @@ public:
     [[nodiscard]] Node inverted() const;
 
     /// Recursively remove all polygons in `polygons` that are inside this BSP tree.
-    [[nodiscard]] QList<Polygon> clipPolygons(QList<Polygon> polygons) const;
+    [[nodiscard]] QList<Polygon> clipPolygons(QList<Polygon> polygons,
+                                              const Options &options) const;
 
     /// Remove all polygons in this BSP tree that are inside the other BSP tree `bsp`.
-    void clipTo(const Node &bsp);
+    void clipTo(const Node &bsp, const Options &options);
 
     /// Return a list of all polygons in this BSP tree.
     [[nodiscard]] QList<Polygon> allPolygons() const;
@@ -236,13 +290,13 @@ public:
     /// new polygons are filtered down to the bottom of the tree and become new
     /// nodes there. Each set of polygons is partitioned using the first polygon
     /// (no heuristic is used to pick a good split).
-    Error build(QList<Polygon> polygons, int limit = defaultRecursionLimit())
+    Error build(QList<Polygon> polygons, Options options = {})
     {
-        return build(std::move(polygons), 0, limit);
+        return build(std::move(polygons), 0, std::move(options));
     }
 
 private:
-    [[nodiscard]] Error build(QList<Polygon> polygons, int level, int limit);
+    [[nodiscard]] Error build(QList<Polygon> polygons, int level, const Options &options);
 
     Plane m_plane;
 
@@ -288,7 +342,7 @@ private:
 ///          |       |            |       |
 ///          +-------+            +-------+
 ///
-[[nodiscard]] Geometry merge(Geometry a, Geometry b, int limit = defaultRecursionLimit());
+[[nodiscard]] Geometry merge(Geometry a, Geometry b, Options options = {});
 
 [[nodiscard]] inline auto unite(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
 [[nodiscard]] inline auto operator|(Geometry a, Geometry b) { return merge(std::move(a), std::move(b)); }
@@ -307,7 +361,7 @@ private:
 ///          |       |
 ///          +-------+
 ///
-[[nodiscard]] Geometry subtract(Geometry a, Geometry b, int limit = defaultRecursionLimit());
+[[nodiscard]] Geometry subtract(Geometry a, Geometry b, Options options = {});
 
 [[nodiscard]] inline auto difference(Geometry a, Geometry b) { return subtract(std::move(a), std::move(b)); }
 [[nodiscard]] inline auto operator-(Geometry a, Geometry b) { return subtract(std::move(a), std::move(b)); }
@@ -326,7 +380,7 @@ private:
 ///          |       |
 ///          +-------+
 ///
-[[nodiscard]] Geometry intersect(Geometry a, Geometry b, int limit = defaultRecursionLimit());
+[[nodiscard]] Geometry intersect(Geometry a, Geometry b, Options options = {});
 
 [[nodiscard]] inline auto intersection(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }
 [[nodiscard]] inline auto operator&(Geometry a, Geometry b) { return intersect(std::move(a), std::move(b)); }

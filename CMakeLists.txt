@@ -26,6 +26,7 @@ add_compile_definitions(
 add_compile_options(
     $<$<COMPILE_LANGUAGE:CXX>:-Werror=missing-declarations>
     -Wall -Wextra
+    -Werror=parentheses
     -Werror=sign-compare
     -Werror=switch
     -Werror=unused

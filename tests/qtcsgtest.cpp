@@ -365,7 +365,7 @@ private slots:
         QCOMPARE(cutOff.error(), Error::NoError);
 
         QBENCHMARK {
-            const auto delta = subtract(body, cutOff, recursionLimit);
+            const auto delta = subtract(body, cutOff, Options::RecursionLimit{recursionLimit});
             QCOMPARE(delta.error(), Error::NoError);
             QVERIFY(!delta.isEmpty());
         }
@@ -476,6 +476,74 @@ private slots:
 
         QCOMPARE(expectedGeometry.error(), expectedGeometry.error());
         QCOMPARE(parsedGeometry.polygons(), expectedGeometry.polygons());
+    }
+
+    void testOptions()
+    {
+        using enum Options::Flag;
+
+        using RecursionLimit = Options::RecursionLimit;
+        using Epsilon        = Options::Epsilon;
+
+        // simulate a function acception an option argument
+        const auto fakeCall = [](Options o) { return o; };
+        constexpr auto defaults = Options{};
+
+        // check options from single flag
+        QCOMPARE(fakeCall(CheckConvexity).
+                 flags, CheckConvexity);
+        QCOMPARE(fakeCall(CheckConvexity).
+                 recursionLimit, defaults.recursionLimit);
+        QCOMPARE(fakeCall(CheckConvexity).
+                 epsilon, defaults.epsilon);
+
+        // check options from multiple flags
+        QCOMPARE(fakeCall(CheckPolygonNormals | CheckConvexity).
+                 flags, CheckPolygonNormals | CheckConvexity);
+        QCOMPARE(fakeCall(CheckPolygonNormals | CheckConvexity).
+                 recursionLimit, defaults.recursionLimit);
+        QCOMPARE(fakeCall(CheckPolygonNormals | CheckConvexity).
+                 epsilon, defaults.epsilon);
+
+        // check options from recursion limit
+        QCOMPARE(fakeCall(RecursionLimit{1}).
+                 flags, defaults.flags);
+        QCOMPARE(fakeCall(RecursionLimit{1}).
+                 recursionLimit, 1);
+        QCOMPARE(fakeCall(RecursionLimit{1}).
+                 epsilon, defaults.epsilon);
+
+        // check options from epsilon
+        QCOMPARE(fakeCall(Epsilon{5}).
+                 flags, defaults.flags);
+        QCOMPARE(fakeCall(Epsilon{5}).
+                 recursionLimit, defaults.recursionLimit);
+        QCOMPARE(fakeCall(Epsilon{5}).
+                 epsilon, 5);
+
+        // check options from single flag, and recursion limit
+        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2}).
+                 flags, Options::CleanupPolygons);
+        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2}).
+                 recursionLimit, 2);
+        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2}).
+                 epsilon, defaults.epsilon);
+
+        // check options from single flag and recursion limit, and epsilon
+        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2} | Epsilon{7}).
+                 flags, Options::CleanupPolygons);
+        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2} | Epsilon{7}).
+                 recursionLimit, 2);
+        QCOMPARE(fakeCall(CleanupPolygons | RecursionLimit{2} | Epsilon{7}).
+                 epsilon, 7);
+
+        // check options from multiple flags, recursion limit, and epsilon
+        QCOMPARE(fakeCall(CheckPolygonNormals | CleanupPolygons | RecursionLimit{4} | Epsilon{9}).
+                 flags, (CheckPolygonNormals | CleanupPolygons));
+        QCOMPARE(fakeCall(CheckPolygonNormals | CleanupPolygons | Epsilon{9} | RecursionLimit{4}).
+                 recursionLimit, 4);
+        QCOMPARE(fakeCall(Epsilon{9} | CheckPolygonNormals | CleanupPolygons | RecursionLimit{4}).
+                 epsilon, 9);
     }
 };
 

@@ -129,7 +129,7 @@ Polygon Polygon::transformed(const QMatrix4x4 &matrix) const
 
 void Polygon::split(const Plane &plane,
                     QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
-                    QList<Polygon> *front, QList<Polygon> *back, float epsilon) const
+                    QList<Polygon> *front, QList<Polygon> *back, Options options) const
 {
     enum VertexType {
         Coplanar = 0,
@@ -142,6 +142,7 @@ void Polygon::split(const Plane &plane,
     auto polygonType = Coplanar;
     auto vertexTypes = std::vector<VertexType>{};
     vertexTypes.reserve(m_vertices.size());
+    const auto epsilon = options.epsilon;
 
     for (const auto &v: m_vertices) {
         const auto t = dotProduct(plane.normal(), v.position()) - plane.w();
@@ -229,15 +230,17 @@ Geometry Geometry::transformed(const QMatrix4x4 &matrix) const
     return Geometry{std::move(transformed)};
 }
 
-void Geometry::validate()
+void Geometry::validate(const Options &options)
 {
     if (m_error != Error::NoError)
         return;
 
-    for (const auto &p: std::as_const(m_polygons)) {
-        if (!p.isConvex()) {
-            m_error = Error::ConvexityError;
-            break;
+    if (options.flags & Options::CheckConvexity) {
+        for (const auto &p: std::as_const(m_polygons)) {
+            if (!p.isConvex()) {
+                m_error = Error::ConvexityError;
+                break;
+            }
         }
     }
 }
@@ -550,7 +553,7 @@ Geometry cylinder(QVector3D center, float height, float radius, float slices)
                     radius, slices);
 }
 
-Geometry merge(Geometry lhs, Geometry rhs, int limit)
+Geometry merge(Geometry lhs, Geometry rhs, Options options)
 {
     if (reportError(lcOperator(), lhs.error(), "Invalid lhs geometry"))
         return Geometry{lhs.error()};
@@ -560,27 +563,27 @@ Geometry merge(Geometry lhs, Geometry rhs, int limit)
     auto a = Node{};
     auto b = Node{};
 
-    if (const auto error = a.build(lhs.polygons(), limit);
+    if (const auto error = a.build(lhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from lhs geometry"))
         return Geometry{error};
-    if (const auto error = b.build(rhs.polygons(), limit);
+    if (const auto error = b.build(rhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
-    a.clipTo(b);
-    b.clipTo(a);
+    a.clipTo(b, options);
+    b.clipTo(a, options);
     b.invert();
-    b.clipTo(a);
+    b.clipTo(a, options);
     b.invert();
 
-    if (const auto error = a.build(b.allPolygons(), limit);
+    if (const auto error = a.build(b.allPolygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
     return Geometry{a.allPolygons()};
 }
 
-Geometry subtract(Geometry lhs, Geometry rhs, int limit)
+Geometry subtract(Geometry lhs, Geometry rhs, Options options)
 {
     if (reportError(lcOperator(), lhs.error(), "Invalid lhs geometry"))
         return Geometry{lhs.error()};
@@ -590,21 +593,21 @@ Geometry subtract(Geometry lhs, Geometry rhs, int limit)
     auto a = Node{};
     auto b = Node{};
 
-    if (const auto error = a.build(lhs.polygons(), limit);
+    if (const auto error = a.build(lhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from lhs geometry"))
         return Geometry{error};
-    if (const auto error = b.build(rhs.polygons(), limit);
+    if (const auto error = b.build(rhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
     a.invert();
-    a.clipTo(b);
-    b.clipTo(a);
+    a.clipTo(b, options);
+    b.clipTo(a, options);
     b.invert();
-    b.clipTo(a);
+    b.clipTo(a, options);
     b.invert();
 
-    if (const auto error = a.build(b.allPolygons(), limit);
+    if (const auto error = a.build(b.allPolygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
@@ -613,7 +616,7 @@ Geometry subtract(Geometry lhs, Geometry rhs, int limit)
     return Geometry{a.allPolygons()};
 }
 
-Geometry intersect(Geometry lhs, Geometry rhs, int limit)
+Geometry intersect(Geometry lhs, Geometry rhs, Options options)
 {
     if (reportError(lcOperator(), lhs.error(), "Invalid lhs geometry"))
         return Geometry{lhs.error()};
@@ -623,20 +626,20 @@ Geometry intersect(Geometry lhs, Geometry rhs, int limit)
     auto a = Node{};
     auto b = Node{};
 
-    if (const auto error = a.build(lhs.polygons(), limit);
+    if (const auto error = a.build(lhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from lhs geometry"))
         return Geometry{error};
-    if (const auto error = b.build(rhs.polygons(), limit);
+    if (const auto error = b.build(rhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
     a.invert();
-    b.clipTo(a);
+    b.clipTo(a, options);
     b.invert();
-    a.clipTo(b);
-    b.clipTo(a);
+    a.clipTo(b, options);
+    b.clipTo(a, options);
 
-    if (const auto error = a.build(b.allPolygons(), limit);
+    if (const auto error = a.build(b.allPolygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
@@ -645,11 +648,11 @@ Geometry intersect(Geometry lhs, Geometry rhs, int limit)
     return Geometry{a.allPolygons()};
 }
 
-std::variant<Node, Error> Node::fromPolygons(QList<Polygon> polygons, int limit)
+std::variant<Node, Error> Node::fromPolygons(QList<Polygon> polygons, Options options)
 {
     auto node = Node{};
 
-    if (const auto error = node.build(std::move(polygons), limit);
+    if (const auto error = node.build(std::move(polygons), options);
         reportError(lcNode(), error, "Could not build BSP tree from polygons"))
         return {error};
 
@@ -677,7 +680,7 @@ Node Node::inverted() const
     return node;
 }
 
-QList<Polygon> Node::clipPolygons(QList<Polygon> polygons) const
+QList<Polygon> Node::clipPolygons(QList<Polygon> polygons, const Options &options) const
 {
     if (m_plane.isNull())
         return polygons;
@@ -686,27 +689,27 @@ QList<Polygon> Node::clipPolygons(QList<Polygon> polygons) const
     auto back = QList<Polygon>{};
 
     for (const auto &p: polygons)
-        p.split(m_plane, &front, &back, &front, &back);
+        p.split(m_plane, &front, &back, &front, &back, options);
 
     if (m_front)
-        front = m_front->clipPolygons(front);
+        front = m_front->clipPolygons(front, options);
 
     if (m_back)
-        back = m_back->clipPolygons(back);
+        back = m_back->clipPolygons(back, options);
     else
         back.clear();
 
     return front + back;
 }
 
-void Node::clipTo(const Node &bsp)
+void Node::clipTo(const Node &bsp, const Options &options)
 {
-    m_polygons = bsp.clipPolygons(std::move(m_polygons));
+    m_polygons = bsp.clipPolygons(std::move(m_polygons), options);
 
     if (m_front)
-        m_front->clipTo(bsp);
+        m_front->clipTo(bsp, options);
     if (m_back)
-        m_back->clipTo(bsp);
+        m_back->clipTo(bsp, options);
 }
 
 QList<Polygon> Node::allPolygons() const
@@ -721,9 +724,9 @@ QList<Polygon> Node::allPolygons() const
     return polygons;
 }
 
-Error Node::build(QList<Polygon> polygons, int level, int limit)
+Error Node::build(QList<Polygon> polygons, int level, const Options &options)
 {
-    if (level == limit) {
+    if (level == options.recursionLimit) {
         qWarning(lcNode, "Maximum recursion level reached");
         return Error::RecursionError;
     }
@@ -739,13 +742,13 @@ Error Node::build(QList<Polygon> polygons, int level, int limit)
     auto back = QList<Polygon>{};
 
     for (const auto &p: polygons)
-        p.split(m_plane, &m_polygons, &m_polygons, &front, &back);
+        p.split(m_plane, &m_polygons, &m_polygons, &front, &back, options);
 
     if (!front.empty()) {
         if (!m_front)
             m_front = std::make_shared<Node>();
 
-        if (const auto error = m_front->build(std::move(front), level + 1, limit);
+        if (const auto error = m_front->build(std::move(front), level + 1, options);
             error != Error::NoError && result == Error::NoError)
             result = error;
     }
@@ -754,7 +757,7 @@ Error Node::build(QList<Polygon> polygons, int level, int limit)
         if (!m_back)
             m_back = std::make_shared<Node>();
 
-        if (const auto error = m_back->build(std::move(back), level + 1, limit);
+        if (const auto error = m_back->build(std::move(back), level + 1, options);
             error != Error::NoError && result == Error::NoError)
             result = error;
     }
