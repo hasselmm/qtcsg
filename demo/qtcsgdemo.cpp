@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "orbitalcameracontroller.h"
+#include "wireframematerial.h"
 
 #include <qtcsg/qtcsg.h>
 #include <qtcsg/qtcsgmath.h>
@@ -29,7 +30,6 @@
 #include <Qt3DExtras/QCuboidMesh>
 #include <Qt3DExtras/QCylinderMesh>
 #include <Qt3DExtras/QForwardRenderer>
-#include <Qt3DExtras/QPhongMaterial>
 #include <Qt3DExtras/QSphereMesh>
 #include <Qt3DExtras/Qt3DWindow>
 
@@ -41,6 +41,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QBoxLayout>
 #include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QWidget>
 
@@ -57,6 +58,15 @@ const auto s_colors = std::array {
     QRgb{0x23'66'54},
     QRgb{0x23'23'66},
 };
+
+struct RenderingStyle {
+    float lineWidth;
+    float diffuseAlpha;
+    QColor specularColor;
+};
+
+const auto s_wireframeVisible = RenderingStyle{1.0f, 0.2f, QColor::fromRgbF(0.0, 0.0, 0.0, 0.0)};
+const auto s_wireframeHidden = RenderingStyle{0.0f, 1.0f, QColor::fromRgbF(0.95, 0.95, 0.95, 1.0)};
 
 // some utility functions making it easier to deal with matrices and vectors
 // -------------------------------------------------------------------------------------------------
@@ -75,8 +85,12 @@ void createEntity(QGeometryRenderer *renderer, QVector3D position, QColor color,
     transform->setRotation(QQuaternion::fromAxisAndAngle({1.0f, 0.0f, 0.0f}, 45.0f));
     transform->setTranslation(position);
 
-    const auto material = new Qt3DExtras::QPhongMaterial;
-    material->setDiffuse(color);
+    const auto material = new WireframeMaterial;
+    material->setFrontLineWidth(s_wireframeHidden.lineWidth);
+    material->setBackLineWidth(s_wireframeHidden.lineWidth);
+    material->setSpecular(s_wireframeHidden.specularColor);
+    color.setAlphaF(s_wireframeHidden.diffuseAlpha);
+    material->setDiffuse(std::move(color));
 
     const auto entity = new QEntity{parent};
     entity->addComponent(renderer);
@@ -112,6 +126,11 @@ private:
 
     QEntity *createShowCase(QEntity *parent);
     QEntity *createUnionTest(QEntity *parent);
+
+    void collectEntities(QEntity *root);
+    void onWireframeBoxToggled(bool checked);
+
+    QList<QEntity *> m_entities;
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -221,6 +240,34 @@ QEntity *Application::createUnionTest(QEntity *parent)
     return unionTest;
 }
 
+void Application::collectEntities(QEntity *root)
+{
+    for (const auto scene: root->childNodes()) {
+        for (const auto node: scene->childNodes()) {
+            if (const auto entity = dynamic_cast<QEntity *>(node))
+                m_entities += entity;
+        }
+    }
+}
+
+void Application::onWireframeBoxToggled(bool checked)
+{
+    const auto &renderStyle = checked ? s_wireframeVisible : s_wireframeHidden;
+
+    for (const auto entity: m_entities) {
+        for (const auto material: entity->componentsOfType<WireframeMaterial>()) {
+            auto diffuseColor = material->diffuse();
+            diffuseColor.setAlphaF(renderStyle.diffuseAlpha);
+
+            material->setAlphaBlendingEnabled(checked);
+            material->setDiffuse(std::move(diffuseColor));
+            material->setSpecular(renderStyle.specularColor);
+            material->setFrontLineWidth(renderStyle.lineWidth);
+            material->setBackLineWidth(renderStyle.lineWidth);
+        }
+    }
+}
+
 int Application::run()
 {
     // 3D view
@@ -265,10 +312,14 @@ int Application::run()
 
     // set root object of the scene
     view->setRootEntity(rootEntity);
+    collectEntities(rootEntity);
 
     // main window
     const auto window = new QWidget;
     window->setWindowTitle(tr("QtCSG Demo"));
+
+    const auto wireframeBox = new QCheckBox{tr("Show &Wireframes"), window};
+    wireframeBox->setFocusPolicy(Qt::FocusPolicy::TabFocus);
 
     const auto showCaseButton = new QPushButton{tr("&1: Show Case"), window};
     showCaseButton->setFocusPolicy(Qt::FocusPolicy::TabFocus);
@@ -282,13 +333,14 @@ int Application::run()
 
     connect(showCaseButton, &QPushButton::toggled, showCaseEntity, &QEntity::setEnabled);
     connect(unionTestButton, &QPushButton::toggled, unionTestEntity, &QEntity::setEnabled);
+    connect(wireframeBox, &QCheckBox::toggled, this, &Application::onWireframeBoxToggled);
 
     const auto buttonGroup = new QButtonGroup{window};
     buttonGroup->addButton(showCaseButton);
     buttonGroup->addButton(unionTestButton);
 
     const auto buttons = new QHBoxLayout;
-    buttons->addStretch(1);
+    buttons->addWidget(wireframeBox, 1);
     buttons->addWidget(showCaseButton);
     buttons->addWidget(unionTestButton);
     buttons->addStretch(1);
@@ -309,6 +361,11 @@ int Application::run()
 void Application::staticInit()
 {
     Utils::enabledColorfulLogging();
+
+    // Force Qt3D OpenGL renderer
+    constexpr auto rendererVariable = "QT3D_RENDERER";
+    if (!qEnvironmentVariableIsSet(rendererVariable))
+        qputenv(rendererVariable, "opengl");
 
 #if QT_VERSION_MAJOR < 6
     setAttribute(Qt::AA_EnableHighDpiScaling);

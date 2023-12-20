@@ -1,8 +1,12 @@
 qt_add_executable(
     QtCSGDemo
     qtcsgdemo.cpp
+    qtcsgdemo.qrc
+
     orbitalcameracontroller.cpp
     orbitalcameracontroller.h
+    wireframematerial.cpp
+    wireframematerial.h
 )
 
 target_link_libraries(QtCSGDemo PRIVATE Qt3DCSG Qt::3DExtras Qt::Widgets)
