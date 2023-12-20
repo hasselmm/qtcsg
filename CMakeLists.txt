@@ -55,5 +55,15 @@ add_subdirectory(qt3dcsg)
 add_subdirectory(demo)
 add_subdirectory(tests)
 
-add_custom_target(docs SOURCES README.md docs/demo.png)
-add_custom_target(github SOURCES .github/workflows/autobuild.yml)
+add_custom_target(
+    docs SOURCES
+    COPYING.md
+    COPYING-BSD-3-Clause.md
+    COPYING-GPL-3.0-or-later.md
+    README.md
+    docs/demo.png
+)
+add_custom_target(
+    github SOURCES
+    .github/workflows/autobuild.yml
+)
