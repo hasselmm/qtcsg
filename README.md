@@ -77,4 +77,4 @@ The code has been tested with Qt 5.15 and Qt 6.2.
 QtCSG is provided under the terms of the
 [GNU General Public License v3.0 or later](licenses/GPL-3.0-or-later.md)
 
-See [LICENSE.md]() for detailed licensing information.
+See [LICENSE.md](LICENSE.md) for detailed licensing information.
