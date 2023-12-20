@@ -392,7 +392,7 @@ Geometry parseGeometry(QString expression)
 
                 auto argValue = parseArgument(primitive, argName, match, *argSpec);
 
-                if (argValue.isNull())
+                if (!argValue.isValid()) // NOTE: default construction values were null for Qt5
                     return Geometry{Error::FileFormatError};
 
                 arguments.insert(std::move(argName), std::move(argValue));
