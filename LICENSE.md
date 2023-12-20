@@ -14,3 +14,5 @@ As with any licensing, the license offered here is a starting point
 for negotiations. Contact me if this offer doesn't work for you:
 
     Mathias Hasselmann <mathias+qtcsg@taschenorakel.de>
+
+PackageLicenseDeclared: GPL-3.0-or-later AND BSD-3-Clause
