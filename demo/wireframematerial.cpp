@@ -31,6 +31,14 @@
 #include <QVector3D>
 #include <QVector4D>
 
+static void initResource()
+{
+    static bool initialized = false;
+
+    if (!std::exchange(initialized, true))
+        Q_INIT_RESOURCE(wireframematerial);
+}
+
 namespace QtCSG::Demo {
 namespace {
 
@@ -69,6 +77,8 @@ WireframeMaterial::WireframeMaterial(Qt3DCore::QNode *parent)
     , m_blendEquation{new QBlendEquation{this}}
     , m_blendEquationArguments{new QBlendEquationArguments{this}}
 {
+    initResource();
+
     const auto fragmentShaderUrl = QUrl{"qrc:/shaders/gl3/robustwireframe.frag"};
     const auto geometryShaderUrl = QUrl{"qrc:/shaders/gl3/robustwireframe.geom"};
     const auto vertexShaderUrl = QUrl{"qrc:/shaders/gl3/robustwireframe.vert"};

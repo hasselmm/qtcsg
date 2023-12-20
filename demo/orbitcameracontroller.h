@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef QT3DCSG_ORBITALCAMERACONTROLLER_H
-#define QT3DCSG_ORBITALCAMERACONTROLLER_H
+#ifndef QT3DCSG_ORBITCAMERACONTROLLER_H
+#define QT3DCSG_ORBITCAMERACONTROLLER_H
 
 #include <Qt3DExtras/QOrbitCameraController>
 
@@ -55,4 +55,4 @@ private:
 
 } // namespace QtCSG::Demo
 
-#endif // QT3DCSG_ORBITALCAMERACONTROLLER_H
+#endif // QT3DCSG_ORBITCAMERACONTROLLER_H

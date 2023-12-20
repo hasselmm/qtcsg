@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#include "orbitalcameracontroller.h"
+#include "orbitcameracontroller.h"
 
 #include <Qt3DRender/QCamera>
 
