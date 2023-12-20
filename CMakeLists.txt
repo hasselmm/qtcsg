@@ -57,9 +57,10 @@ add_subdirectory(tests)
 
 add_custom_target(
     docs SOURCES
-    COPYING.md
-    COPYING-BSD-3-Clause.md
-    COPYING-GPL-3.0-or-later.md
+    LICENSE.md
+    LICENSE.spdx
+    licenses/BSD-3-Clause.md
+    licenses/GPL-3.0-or-later.md
     README.md
     docs/demo.png
 )
