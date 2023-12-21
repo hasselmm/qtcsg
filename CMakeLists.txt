@@ -56,13 +56,13 @@ add_subdirectory(demo)
 add_subdirectory(tests)
 
 add_custom_target(
-    docs SOURCES
-    LICENSE.md
+    Documentation SOURCES
+
+    COPYING-GPL3.md
     LICENSE.spdx
-    licenses/BSD-3-Clause.md
-    licenses/GPL-3.0-or-later.md
     README.md
     docs/demo.png
+    docs/licenses/BSD-3-Clause-KDAB.md
 )
 add_custom_target(
     github SOURCES
