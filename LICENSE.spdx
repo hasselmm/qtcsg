@@ -3,7 +3,7 @@ DataLicense: CC0-1.0
 PackageName: QtCSG
 PackageOriginator: Person: Mathias Hasselmann
 PackageHomePage: https://github.com/hasselmm/qtcsg.git
-PackageLicenseDeclared: GPL-3.0-or-later AND BSD-3-Clause
+PackageLicenseDeclared: GPL-3.0
 
 FileName: demo/shaders/gl3/robustwireframe.frag
 FileContributor: Klaralvdalens Datakonsult AB (KDAB)
