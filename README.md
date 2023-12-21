@@ -74,7 +74,18 @@ The code has been tested with Qt 5.15 and Qt 6.2.
 
 ## Legal Notice
 
-QtCSG is provided under the terms of the
-[GNU General Public License v3.0 or later](licenses/GPL-3.0-or-later.md)
+Unless otherwise noted, QtCSG is provided under the terms of the
+[GNU General Public License v3.0 or later](COPYING-GPL3.md).
 
-See [LICENSE.md](LICENSE.md) for detailed licensing information.
+As an exception to this, the following files are provided under the 
+terms of the [revised BSD 3-Clause License](docs/licenses/BSD-3-Clause-KDAB.md):
+
+- [robustwireframe.frag](demo/shaders/gl3/robustwireframe.frag)
+- [robustwireframe.geom](demo/shaders/gl3/robustwireframe.geom)
+- [robustwireframe.vert](demo/shaders/gl3/robustwireframe.vert)
+
+As with any licensing, the license offered here is a starting point
+for negotiations. Contact me if this offer doesn't work for you:
+
+    Mathias Hasselmann <mathias+qtcsg@taschenorakel.de>
+
