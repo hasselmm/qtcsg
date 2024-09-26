@@ -19,11 +19,23 @@
 #include "qtcsgtest.h"
 
 #include <qtcsg/qtcsg.h>
+#include <qtcsg/qtcsgio.h>
 #include <qtcsg/qtcsgmath.h>
+
+#include <QDir>
 
 namespace QtCSG::Tests {
 
 using std::make_pair;
+
+class Helper
+{
+public:
+    static void split(const Polygon &polygon, const Plane &plane,
+                      QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
+                      QList<Polygon> *front, QList<Polygon> *back,
+                      Options options = {});
+};
 
 class Test : public QObject
 {
@@ -204,7 +216,7 @@ private slots:
         auto front = QList<Polygon>{};
         auto back = QList<Polygon>{};
 
-        poly.split(plane, &cpf, &cpb, &front, &back);
+        Helper::split(poly, plane, &cpf, &cpb, &front, &back);
 
         QCOMPARE(cpf.length(), 0);
         QCOMPARE(cpb.length(), 0);
@@ -229,7 +241,7 @@ private slots:
         auto front = QList<Polygon>{};
         auto back = QList<Polygon>{};
 
-        poly.split(plane, &cpf, &cpb, &front, &back);
+        Helper::split(poly, plane, &cpf, &cpb, &front, &back);
 
         QCOMPARE(cpf.length(), 0);
         QCOMPARE(cpb.length(), 0);
@@ -255,7 +267,7 @@ private slots:
         auto front = QList<Polygon>{};
         auto back = QList<Polygon>{};
 
-        poly.split(plane, &cpf, &cpb, &front, &back);
+        Helper::split(poly, plane, &cpf, &cpb, &front, &back);
 
         QCOMPARE(cpf.length(), 0);
         QCOMPARE(cpb.length(), 0);
@@ -325,6 +337,47 @@ private slots:
         QCOMPARE(transformed.position(), expectedResult.position());
         QCOMPARE(transformed.normal(),   expectedResult.normal());
         QCOMPARE(transformed,            expectedResult);
+    }
+
+    void testCutOff_data()
+    {
+        QTest::addColumn<QString>("bodyFileName");
+        QTest::addColumn<QString>("cutOffFileName");
+        QTest::addColumn<int>    ("recursionLimit");
+
+        for (const auto dataDir = QDir{":/qtcsg/assets/cutoff"};
+             const auto &childInfo: dataDir.entryInfoList(QDir::Dirs, QDir::Name)) {
+            auto childDir = QDir{childInfo.filePath()};
+
+            QTest::addRow("%s/l", qUtf8Printable(childInfo.fileName()))
+                << childDir.filePath("body.off")
+                << childDir.filePath("left.off")
+                << 20;
+
+            QTest::addRow("%s/r", qUtf8Printable(childInfo.fileName()))
+                << childDir.filePath("body.off")
+                << childDir.filePath("right.off")
+                << 20;
+        }
+    }
+
+    void testCutOff()
+    {
+        const QFETCH(int,     recursionLimit);
+        const QFETCH(QString, bodyFileName);
+        const QFETCH(QString, cutOffFileName);
+
+        const auto body = readGeometry(bodyFileName);
+        QCOMPARE(body.error(), Error::NoError);
+
+        const auto cutOff = readGeometry(cutOffFileName);
+        QCOMPARE(cutOff.error(), Error::NoError);
+
+        QBENCHMARK {
+            const auto delta = subtract(body, cutOff, Options::RecursionLimit{recursionLimit});
+            QCOMPARE(delta.error(), Error::NoError);
+            QVERIFY(!delta.isEmpty());
+        }
     }
 
     void testParseGeometry_data()
@@ -432,6 +485,108 @@ private slots:
 
         QCOMPARE(expectedGeometry.error(), expectedGeometry.error());
         QCOMPARE(parsedGeometry.polygons(), expectedGeometry.polygons());
+    }
+
+    void testOptions_data()
+    {
+        const auto defaults = Options{};
+        const auto makeOptions = [](Options o) { return o; };
+
+        QTest::addColumn<Options>                       ("actualOptions");
+        QTest::addColumn<Options::Flags>                ("expectedFlags");
+        QTest::addColumn<int>                           ("expectedRecursionLimit");
+        QTest::addColumn<float>                         ("expectedEpsilon");
+        QTest::addColumn<bool>                          ("expectedInspection");
+
+        QTest::newRow("single-flag")
+            << makeOptions(Options::CheckConvexity)
+            << Options::Flags{Options::CheckConvexity}
+            << defaults.recursionLimit
+            << defaults.epsilon
+            << false;
+
+        QTest::newRow("multiple-flags")
+            << makeOptions(Options::CheckPolygonNormals | Options::CheckConvexity)
+            << Options::Flags{Options::CheckPolygonNormals | Options::CheckConvexity}
+            << defaults.recursionLimit
+            << defaults.epsilon
+            << false;
+
+        QTest::newRow("recursion-limit")
+            << makeOptions(Options::RecursionLimit{1})
+            << defaults.flags
+            << 1
+            << defaults.epsilon
+            << false;
+
+        QTest::newRow("epsilon")
+            << makeOptions(Options::Epsilon{0.1f})
+            << defaults.flags
+            << defaults.recursionLimit
+            << 0.1f
+            << false;
+
+        QTest::newRow("single-flag+recursion-limit")
+            << makeOptions(Options::CleanupPolygons
+                           | Options::RecursionLimit{2})
+            << Options::Flags{Options::CleanupPolygons}
+            << 2
+            << defaults.epsilon
+            << false;
+
+        QTest::newRow("single-flag+recursion-limit+epsilon")
+            << makeOptions(Options::CleanupPolygons
+                           | Options::RecursionLimit{3}
+                           | Options::Epsilon{0.2f})
+            << Options::Flags{Options::CleanupPolygons}
+            << 3
+            << 0.2f
+            << false;
+
+        QTest::newRow("multiple-flags+recursion-limit+epsilon")
+            << makeOptions(Options::CheckPolygonNormals
+                           | Options::CleanupPolygons
+                           | Options::RecursionLimit{4}
+                           | Options::Epsilon{0.3f})
+            << Options::Flags{Options::CheckPolygonNormals | Options::CleanupPolygons}
+            << 4
+            << 0.3f
+            << false;
+
+        QTest::newRow("multiple-flags+recursion-limit+epsilon+inspect")
+            << makeOptions(Options::CheckPolygonNormals
+                           | Options::CleanupPolygons
+                           | Options::RecursionLimit{5}
+                           | Options::Epsilon{0.4f}
+                           | [](Inspection::Event, std::any) {
+                                 return Inspection::Result::Abort;
+                             })
+            << Options::Flags{Options::CheckPolygonNormals | Options::CleanupPolygons}
+            << 5
+            << 0.4f
+            << true;
+    }
+
+    void testOptions()
+    {
+        const QFETCH(Options,                   actualOptions);
+
+        const QFETCH(Options::Flags,            expectedFlags);
+        QCOMPARE(actualOptions.flags,           expectedFlags);
+
+        const QFETCH(int,                       expectedRecursionLimit);
+        QCOMPARE(actualOptions.recursionLimit,  expectedRecursionLimit);
+
+        const QFETCH(float,                     expectedEpsilon);
+        QCOMPARE(actualOptions.epsilon,         expectedEpsilon);
+
+        const QFETCH(bool,                      expectedInspection);
+        QCOMPARE(!!actualOptions.inspection,    expectedInspection);
+
+        if (actualOptions.inspection) {
+            QCOMPARE(actualOptions.inspection(Inspection::Event::Build, {}),
+                     Inspection::Result::Abort);
+        }
     }
 };
 

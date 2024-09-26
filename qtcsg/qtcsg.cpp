@@ -41,6 +41,105 @@ void flip(T &o)
     o.flip();
 }
 
+[[nodiscard]] constexpr bool isConvexPoint(const QVector3D &a,
+                                           const QVector3D &b,
+                                           const QVector3D &c,
+                                           const QVector3D &normal,
+                                           float epsilon = 0)
+{
+    const auto cross = QVector3D::crossProduct(b - a, c - b);
+    const auto d = QVector3D::dotProduct(cross, normal);
+    return d >= epsilon;
+}
+
+/// Split `polygon` by `plane` if needed, then put the polygon or polygon
+/// fragments in the appropriate lists. Coplanar polygons go into either
+/// `coplanarFront` or `coplanarBack` depending on their orientation with
+/// respect to this plane. Polygons in front or in back of this plane go into
+/// either `front` or `back`.
+void split(const Polygon &polygon, const Plane &plane,
+           QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
+           QList<Polygon> *front, QList<Polygon> *back,
+           const Options &options)
+{
+    enum VertexType {
+        Coplanar = 0,
+        Front = (1 << 0),
+        Back = (1 << 1),
+        Spanning = Front | Back
+    };
+
+    const auto vertices = polygon.vertices();
+    const auto normal = polygon.plane().normal();
+    const auto epsilon = options.epsilon;
+
+    // Classify each point as well as the entire polygon into one of the above four classes.
+    auto polygonType = Coplanar;
+    auto vertexTypes = std::vector<VertexType>{};
+    vertexTypes.reserve(vertices.size());
+
+    for (const auto &v: vertices) {
+        const auto t = dotProduct(plane.normal(), v.position()) - plane.w();
+        const auto type = (t < -epsilon) ? Back : (t > epsilon) ? Front : Coplanar;
+        polygonType = static_cast<VertexType>(polygonType | type);
+        vertexTypes.emplace_back(type);
+    }
+
+    // Put the polygon in the correct list, splitting it when necessary.
+    switch (polygonType) {
+    case Coplanar:
+        if (dotProduct(plane.normal(), normal) > 0)
+            coplanarFront->append(polygon);
+        else
+            coplanarBack->append(polygon);
+
+        break;
+
+    case Front:
+        front->append(polygon);
+        break;
+
+    case Back:
+        back->append(polygon);
+        break;
+
+    case Spanning:
+        auto f = QList<Vertex>{};
+        auto b = QList<Vertex>{};
+
+        for (auto i = 0; i < vertices.count(); ++i) {
+            const auto j = (i + 1) % vertices.count();
+
+            const auto ti = vertexTypes[i];
+            const auto tj = vertexTypes[j];
+            const auto vi = vertices[i];
+            const auto vj = vertices[j];
+
+            if (ti != Back)
+                f.append(vi);
+            if (ti != Front)
+                b.append(vi);
+
+            if ((ti | tj) == Spanning) {
+                const auto t = (plane.w()
+                                - dotProduct(plane.normal(), vi.position()))
+                               / dotProduct(plane.normal(), vj.position() - vi.position());
+                const auto v = vi.interpolated(vj, t);
+
+                f.append(v);
+                b.append(v);
+            }
+        }
+
+        if (f.count() >= 3)
+            front->append(Polygon{std::move(f), polygon.shared()});
+        if (b.count() >= 3)
+            back->append(Polygon{std::move(b), polygon.shared()});
+
+        break;
+    }
+}
+
 } // namespace
 
 void Vertex::flip()
@@ -75,6 +174,25 @@ void Plane::flip()
     m_w = -m_w;
 }
 
+bool Polygon::isConvex() const
+{
+    if (m_vertices.size() < 3)
+        return true;
+
+    const auto planeNormal = m_plane.normal();
+
+    for (auto i = m_vertices.size() - 2, j = m_vertices.size() - 1, k = qsizetype{0};
+         k < m_vertices.size(); i = j, j = k, ++k) {
+        if (!isConvexPoint(m_vertices[i].position(),
+                           m_vertices[j].position(),
+                           m_vertices[k].position(),
+                           planeNormal))
+            return false;
+    }
+
+    return true;
+}
+
 void Polygon::flip()
 {
     std::reverse(m_vertices.begin(), m_vertices.end());
@@ -95,84 +213,6 @@ Polygon Polygon::transformed(const QMatrix4x4 &matrix) const
                    std::back_inserter(transformed), applyMatrix);
 
     return Polygon{std::move(transformed)};
-}
-
-void Polygon::split(const Plane &plane,
-                    QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
-                    QList<Polygon> *front, QList<Polygon> *back, float epsilon) const
-{
-    enum VertexType {
-        Coplanar = 0,
-        Front = (1 << 0),
-        Back = (1 << 1),
-        Spanning = Front | Back
-    };
-
-    // Classify each point as well as the entire polygon into one of the above four classes.
-    auto polygonType = Coplanar;
-    auto vertexTypes = std::vector<VertexType>{};
-    vertexTypes.reserve(m_vertices.size());
-
-    for (const auto &v: m_vertices) {
-        const auto t = dotProduct(plane.normal(), v.position()) - plane.w();
-        const auto type = (t < -epsilon) ? Back : (t > epsilon) ? Front : Coplanar;
-        polygonType = static_cast<VertexType>(polygonType | type);
-        vertexTypes.emplace_back(type);
-    }
-
-    // Put the polygon in the correct list, splitting it when necessary.
-    switch (polygonType) {
-    case Coplanar:
-        if (dotProduct(plane.normal(), m_plane.normal()) > 0)
-            coplanarFront->append(*this);
-        else
-            coplanarBack->append(*this);
-
-        break;
-
-    case Front:
-        front->append(*this);
-        break;
-
-    case Back:
-        back->append(*this);
-        break;
-
-    case Spanning:
-        auto f = QList<Vertex>{};
-        auto b = QList<Vertex>{};
-
-        for (auto i = 0; i < m_vertices.count(); ++i) {
-              const auto j = (i + 1) % m_vertices.count();
-
-              const auto ti = vertexTypes[i];
-              const auto tj = vertexTypes[j];
-              const auto vi = m_vertices[i];
-              const auto vj = m_vertices[j];
-
-              if (ti != Back)
-                  f.append(vi);
-              if (ti != Front)
-                  b.append(vi);
-
-              if ((ti | tj) == Spanning) {
-                  const auto t = (plane.w()
-                                  - dotProduct(plane.normal(), vi.position()))
-                                  / dotProduct(plane.normal(), vj.position() - vi.position());
-                  const auto v = vi.interpolated(vj, t);
-
-                  f.append(v);
-                  b.append(v);
-              }
-        }
-
-        if (f.count() >= 3)
-            front->append(Polygon{std::move(f), m_shared});
-        if (b.count() >= 3)
-            back->append(Polygon{std::move(b), m_shared});
-
-        break;
-    }
 }
 
 Geometry Geometry::inversed() const
@@ -197,6 +237,21 @@ Geometry Geometry::transformed(const QMatrix4x4 &matrix) const
                    std::back_inserter(transformed), applyMatrix);
 
     return Geometry{std::move(transformed)};
+}
+
+void Geometry::validate(const Options &options)
+{
+    if (m_error != Error::NoError)
+        return;
+
+    if (options.flags & Options::CheckConvexity) {
+        for (const auto &p: std::as_const(m_polygons)) {
+            if (!p.isConvex()) {
+                m_error = Error::ConvexityError;
+                break;
+            }
+        }
+    }
 }
 
 namespace {
@@ -507,7 +562,7 @@ Geometry cylinder(QVector3D center, float height, float radius, float slices)
                     radius, slices);
 }
 
-Geometry merge(Geometry lhs, Geometry rhs, int limit)
+Geometry merge(Geometry lhs, Geometry rhs, Options options)
 {
     if (reportError(lcOperator(), lhs.error(), "Invalid lhs geometry"))
         return Geometry{lhs.error()};
@@ -517,27 +572,27 @@ Geometry merge(Geometry lhs, Geometry rhs, int limit)
     auto a = Node{};
     auto b = Node{};
 
-    if (const auto error = a.build(lhs.polygons(), limit);
+    if (const auto error = a.build(lhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from lhs geometry"))
         return Geometry{error};
-    if (const auto error = b.build(rhs.polygons(), limit);
+    if (const auto error = b.build(rhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
-    a.clipTo(b);
-    b.clipTo(a);
-    b.invert();
-    b.clipTo(a);
-    b.invert();
+    a.clipTo(b, options);
+    b.clipTo(a, options);
+    b.invert(options);
+    b.clipTo(a, options);
+    b.invert(options);
 
-    if (const auto error = a.build(b.allPolygons(), limit);
+    if (const auto error = a.build(b.allPolygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
     return Geometry{a.allPolygons()};
 }
 
-Geometry subtract(Geometry lhs, Geometry rhs, int limit)
+Geometry subtract(Geometry lhs, Geometry rhs, Options options)
 {
     if (reportError(lcOperator(), lhs.error(), "Invalid lhs geometry"))
         return Geometry{lhs.error()};
@@ -547,30 +602,30 @@ Geometry subtract(Geometry lhs, Geometry rhs, int limit)
     auto a = Node{};
     auto b = Node{};
 
-    if (const auto error = a.build(lhs.polygons(), limit);
+    if (const auto error = a.build(lhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from lhs geometry"))
         return Geometry{error};
-    if (const auto error = b.build(rhs.polygons(), limit);
+    if (const auto error = b.build(rhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
-    a.invert();
-    a.clipTo(b);
-    b.clipTo(a);
-    b.invert();
-    b.clipTo(a);
-    b.invert();
+    a.invert(options);
+    a.clipTo(b, options);
+    b.clipTo(a, options);
+    b.invert(options);
+    b.clipTo(a, options);
+    b.invert(options);
 
-    if (const auto error = a.build(b.allPolygons(), limit);
+    if (const auto error = a.build(b.allPolygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
-    a.invert();
+    a.invert(options);
 
     return Geometry{a.allPolygons()};
 }
 
-Geometry intersect(Geometry lhs, Geometry rhs, int limit)
+Geometry intersect(Geometry lhs, Geometry rhs, Options options)
 {
     if (reportError(lcOperator(), lhs.error(), "Invalid lhs geometry"))
         return Geometry{lhs.error()};
@@ -580,61 +635,65 @@ Geometry intersect(Geometry lhs, Geometry rhs, int limit)
     auto a = Node{};
     auto b = Node{};
 
-    if (const auto error = a.build(lhs.polygons(), limit);
+    if (const auto error = a.build(lhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from lhs geometry"))
         return Geometry{error};
-    if (const auto error = b.build(rhs.polygons(), limit);
+    if (const auto error = b.build(rhs.polygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from rhs geometry"))
         return Geometry{error};
 
-    a.invert();
-    b.clipTo(a);
-    b.invert();
-    a.clipTo(b);
-    b.clipTo(a);
+    a.invert(options);
+    b.clipTo(a, options);
+    b.invert(options);
+    a.clipTo(b, options);
+    b.clipTo(a, options);
 
-    if (const auto error = a.build(b.allPolygons(), limit);
+    if (const auto error = a.build(b.allPolygons(), options);
         reportError(lcOperator(), error, "Could not build BSP tree from transformed tree"))
         return Geometry{error};
 
-    a.invert();
+    a.invert(options);
 
     return Geometry{a.allPolygons()};
 }
 
-std::variant<Node, Error> Node::fromPolygons(QList<Polygon> polygons, int limit)
+std::variant<Node, Error> Node::fromPolygons(QList<Polygon> polygons, Options options)
 {
     auto node = Node{};
 
-    if (const auto error = node.build(std::move(polygons), limit);
+    if (const auto error = node.build(std::move(polygons), options);
         reportError(lcNode(), error, "Could not build BSP tree from polygons"))
         return {error};
 
     return {std::move(node)};
 }
 
-void Node::invert()
+void Node::invert(const Options &options)
 {
+    if (Q_UNLIKELY(options.inspection))
+        if (options.inspection(Inspection::Event::Invert, {}) == Inspection::Result::Abort)
+            return;
+
     std::for_each(m_polygons.begin(), m_polygons.end(), &flip<Polygon>);
 
     m_plane.flip();
 
     if (m_front)
-        m_front->invert();
+        m_front->invert(options);
     if (m_back)
-        m_back->invert();
+        m_back->invert(options);
 
     std::swap(m_front, m_back);
 }
 
-Node Node::inverted() const
+Node Node::inverted(const Options &options) const
 {
     auto node = *this;
-    node.invert();
+    node.invert(options);
     return node;
 }
 
-QList<Polygon> Node::clipPolygons(QList<Polygon> polygons) const
+QList<Polygon> Node::clipPolygons(QList<Polygon> polygons, const Options &options) const
 {
     if (m_plane.isNull())
         return polygons;
@@ -643,27 +702,31 @@ QList<Polygon> Node::clipPolygons(QList<Polygon> polygons) const
     auto back = QList<Polygon>{};
 
     for (const auto &p: polygons)
-        p.split(m_plane, &front, &back, &front, &back);
+        split(p, m_plane, &front, &back, &front, &back, options);
 
     if (m_front)
-        front = m_front->clipPolygons(front);
+        front = m_front->clipPolygons(front, options);
 
     if (m_back)
-        back = m_back->clipPolygons(back);
+        back = m_back->clipPolygons(back, options);
     else
         back.clear();
 
     return front + back;
 }
 
-void Node::clipTo(const Node &bsp)
+void Node::clipTo(const Node &bsp, const Options &options)
 {
-    m_polygons = bsp.clipPolygons(std::move(m_polygons));
+    if (Q_UNLIKELY(options.inspection))
+        if (options.inspection(Inspection::Event::Clip, bsp) == Inspection::Result::Abort)
+            return;
+
+    m_polygons = bsp.clipPolygons(std::move(m_polygons), options);
 
     if (m_front)
-        m_front->clipTo(bsp);
+        m_front->clipTo(bsp, options);
     if (m_back)
-        m_back->clipTo(bsp);
+        m_back->clipTo(bsp, options);
 }
 
 QList<Polygon> Node::allPolygons() const
@@ -678,12 +741,16 @@ QList<Polygon> Node::allPolygons() const
     return polygons;
 }
 
-Error Node::build(QList<Polygon> polygons, int level, int limit)
+Error Node::build(QList<Polygon> polygons, int level, const Options &options)
 {
-    if (level == limit) {
+    if (Q_UNLIKELY(level >= options.recursionLimit)) {
         qWarning(lcNode, "Maximum recursion level reached");
         return Error::RecursionError;
     }
+
+    if (Q_UNLIKELY(options.inspection))
+        if (options.inspection(Inspection::Event::Build, {}) == Inspection::Result::Abort)
+            return Error::NoError; // FIXME: AbortedError?
 
     if (polygons.isEmpty())
         return Error::NoError;
@@ -696,13 +763,13 @@ Error Node::build(QList<Polygon> polygons, int level, int limit)
     auto back = QList<Polygon>{};
 
     for (const auto &p: polygons)
-        p.split(m_plane, &m_polygons, &m_polygons, &front, &back);
+        split(p, m_plane, &m_polygons, &m_polygons, &front, &back, options);
 
     if (!front.empty()) {
         if (!m_front)
             m_front = std::make_shared<Node>();
 
-        if (const auto error = m_front->build(std::move(front), level + 1, limit);
+        if (const auto error = m_front->build(std::move(front), level + 1, options);
             error != Error::NoError && result == Error::NoError)
             result = error;
     }
@@ -711,7 +778,7 @@ Error Node::build(QList<Polygon> polygons, int level, int limit)
         if (!m_back)
             m_back = std::make_shared<Node>();
 
-        if (const auto error = m_back->build(std::move(back), level + 1, limit);
+        if (const auto error = m_back->build(std::move(back), level + 1, options);
             error != Error::NoError && result == Error::NoError)
             result = error;
     }
@@ -766,4 +833,24 @@ QDebug operator<<(QDebug debug, Vertex vertex)
             << ")";
 }
 
+namespace Tests {
+
+/// This class is an obscure attempt to export internal functions for unit tests.
+/// Might be this must be replaced by more regular friend declarations.
+class Helper
+{
+    Q_NEVER_INLINE static void split(const Polygon &polygon, const Plane &plane,
+                                     QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
+                                     QList<Polygon> *front, QList<Polygon> *back, Options options);
+};
+
+/// Defining this function out-of place should convince the compiler to export it.
+void Helper::split(const Polygon &polygon, const Plane &plane,
+                   QList<Polygon> *coplanarFront, QList<Polygon> *coplanarBack,
+                   QList<Polygon> *front, QList<Polygon> *back, Options options)
+{
+    QtCSG::split(polygon, plane, coplanarFront, coplanarBack, front, back, options);
+}
+
+} // namespace Tests
 } // namespace QtCSG
