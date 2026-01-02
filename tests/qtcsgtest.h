@@ -96,9 +96,31 @@ inline bool qCompare(const QMatrix4x4 &a,const QMatrix4x4 &b,
                      const char *file, int line)
 {
     if (!qFuzzyCompare(a, b)) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
+
         return compare_helper(false, "Compared values are not the same",
-                              toString(a), toString(b), actual, expected,
-                              file, line);
+                              toString(a), toString(b), actual, expected, file, line);
+
+#elif QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+
+        const auto formatter = [](const QMatrix4x4 &v) {
+            return [v]() { return toString(v); };
+        };
+
+        return compare_helper(false, "Compared values are not the same",
+                              formatter(a), formatter(b), actual, expected, file, line);
+
+#else
+
+        const auto formatter = [](const void *p) -> const char * {
+            return toString(*static_cast<const QMatrix4x4 *>(p));
+        };
+
+        return compare_helper(false, "Compared values are not the same",
+                              &a, &b, formatter, formatter, actual, expected, file, line);
+
+#endif
+
     }
 
     return true;
