@@ -50,8 +50,8 @@ void Vertex::flip()
 
 Vertex Vertex::transformed(const QMatrix4x4 &matrix) const
 {
-    auto newPosition = matrix * position();
-    auto newNormal = findRotation(matrix) * normal(); // only rotate; do not translate, or scale
+    auto newPosition = matrix.map(position());
+    auto newNormal = findRotation(matrix).map(normal()); // only rotate; do not translate, or scale
     return Vertex{std::move(newPosition), std::move(newNormal)};
 }
 
