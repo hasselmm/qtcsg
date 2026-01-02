@@ -651,7 +651,7 @@ QList<Polygon> Node::clipPolygons(QList<Polygon> polygons) const
     auto front = QList<Polygon>{};
     auto back = QList<Polygon>{};
 
-    for (const auto &p: polygons)
+    for (const auto &p : std::as_const(polygons))
         p.split(m_plane, &front, &back, &front, &back);
 
     if (m_front)
