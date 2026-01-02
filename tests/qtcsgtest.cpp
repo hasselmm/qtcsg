@@ -262,9 +262,9 @@ private slots:
         QCOMPARE(front.length(), 1);
         QCOMPARE(back.length(), 1);
 
-        for (const auto &v: front.constFirst().vertices())
+        for (const auto &frontVertices = front.constFirst().vertices(); const auto &v : frontVertices)
             QVERIFY2(v.position().x() >= 0, "All front vertices must have x >= 0");
-        for (const auto &v: back.constFirst().vertices())
+        for (const auto &backVertices = back.constFirst().vertices(); const auto &v : backVertices)
             QVERIFY2(v.position().x() <= 0, "All back vertices must have x <= 0");
     }
 
