@@ -41,6 +41,15 @@ void flip(T &o)
     o.flip();
 }
 
+auto matchGlobally(const QRegularExpression &pattern, QStringView subject)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    return pattern.globalMatchView(std::move(subject));
+#else
+    return pattern.globalMatch(std::move(subject));
+#endif
+}
+
 } // namespace
 
 void Vertex::flip()
@@ -368,7 +377,7 @@ Geometry parseGeometry(QString expression)
     auto arguments = QVariantMap{};
 
     if (argList != u")") {
-        if (auto it = s_argPattern.globalMatch(argList); it.hasNext()) {
+        if (auto it = matchGlobally(s_argPattern, argList); it.hasNext()) {
             auto expectedStart = 0;
 
             while (it.hasNext()) {
