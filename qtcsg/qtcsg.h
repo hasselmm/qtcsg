@@ -22,8 +22,13 @@
 #include <QVariant>
 #include <QVector3D>
 
-#include <expected>
 #include <memory>
+
+#if __cpp_lib_expected >= 202211L
+#include <expected>
+#else
+#include <zeus/expected.hpp>
+#endif
 
 namespace Qt3DCSG {
 class Geometry;
@@ -32,6 +37,14 @@ class Geometry;
 namespace QtCSG {
 
 Q_NAMESPACE
+
+#if __cpp_lib_expected >= 202211L
+using std::expected;
+using std::unexpected;
+#else
+using zeus::expected;
+using zeus::unexpected;
+#endif
 
 constexpr auto defaultRecursionLimit() { return 1024; }
 
@@ -205,8 +218,7 @@ class Node
 public:
     Node() = default;
 
-    static std::expected<Node, Error> fromPolygons(QList<Polygon> polygons,
-                                                   int limit = defaultRecursionLimit());
+    static expected<Node, Error> fromPolygons(QList<Polygon> polygons, int limit = defaultRecursionLimit());
 
     [[nodiscard]] auto plane() const { return m_plane; }
     [[nodiscard]] auto polygons() const { return m_polygons; }
