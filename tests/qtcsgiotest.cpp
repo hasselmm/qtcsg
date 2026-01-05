@@ -36,7 +36,7 @@ private slots:
         QTest::addColumn<const FileFormat<Geometry> *>("format");
 
         for (const auto format: FileFormat<Geometry>::supported())
-            QTest::addRow("%ls", qUtf16Printable(format->id())) << format;
+            QTest::addRow("%s", format->id().toLatin1().constData()) << format;
     }
 
     void testRoundTrip()
