@@ -138,9 +138,9 @@ private slots:
                          make_pair(depth, 1));
                 QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().constFirst().vertices().count())),
                          make_pair(depth, 4));
-                QCOMPARE(make_pair(depth, !!subNode->front()),
+                QCOMPARE(make_pair(depth, subNode->front() != nullptr),
                          make_pair(depth, false));
-                QCOMPARE(make_pair(depth, !!subNode->back()),
+                QCOMPARE(make_pair(depth, subNode->back() != nullptr),
                          make_pair(depth, depth < 5));
             }
         }
@@ -173,9 +173,9 @@ private slots:
                          make_pair(depth, 1));
                 QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().constFirst().vertices().count())),
                          make_pair(depth, 4));
-                QCOMPARE(make_pair(depth, !!subNode->front()),
+                QCOMPARE(make_pair(depth, subNode->front() != nullptr),
                          make_pair(depth, depth < 5));
-                QCOMPARE(make_pair(depth, !!subNode->back()),
+                QCOMPARE(make_pair(depth, subNode->back() != nullptr),
                          make_pair(depth, false));
             }
         }
