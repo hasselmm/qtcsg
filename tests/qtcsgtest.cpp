@@ -37,8 +37,8 @@ private slots:
         QCOMPARE(polygons.count(), 6);
 
         for (auto i = 0; i < polygons.count(); ++i) {
-            QCOMPARE(make_pair(i, static_cast<int>(polygons[i].vertices().count())),
-                     make_pair(i, 4));
+            QCOMPARE(make_pair(i, qsizetype{polygons[i].vertices().count()}),
+                     make_pair(i, qsizetype{4}));
         }
 
         const auto vertices = polygons[0].vertices();
@@ -61,8 +61,8 @@ private slots:
         QCOMPARE(polygons.count(), 128);
 
         for (auto i = 0; i < polygons.count(); ++i) {
-            QCOMPARE(make_pair(i, static_cast<int>(polygons[i].vertices().count())),
-                     make_pair(i, i % 8 == 0 || i % 8 == 7 ? 3 : 4));
+            QCOMPARE(make_pair(i, qsizetype{polygons[i].vertices().count()}),
+                     make_pair(i, qsizetype{i % 8 == 0 || i % 8 == 7 ? 3 : 4}));
         }
     }
 
@@ -73,8 +73,8 @@ private slots:
         QCOMPARE(polygons.count(), 48);
 
         for (auto i = 0; i < polygons.count(); ++i) {
-            QCOMPARE(make_pair(i, static_cast<int>(polygons[i].vertices().count())),
-                     make_pair(i, i % 3 != 1 ? 3 : 4));
+            QCOMPARE(make_pair(i, qsizetype{polygons[i].vertices().count()}),
+                     make_pair(i, qsizetype{i % 3 != 1 ? 3 : 4}));
         }
     }
 
