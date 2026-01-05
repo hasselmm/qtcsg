@@ -161,7 +161,7 @@ private slots:
             QCOMPARE(std::get<Error>(maybeNode), Error::NoError);
 
         QVERIFY(std::holds_alternative<Node>(maybeNode));
-        const auto node = std::get<Node>(maybeNode);
+        const auto node = std::get<Node>(maybeNode).inverted();
 
         {
             auto depth = 0;
