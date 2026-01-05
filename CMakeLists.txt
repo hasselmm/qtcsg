@@ -49,6 +49,8 @@ find_package(Qt${QT_VERSION_MAJOR} ${QT_VERSION} REQUIRED COMPONENTS ${QT_MODULE
 
 include(QtCSGBackports)
 
+include_directories(expected/include)
+
 add_subdirectory(qtcsg)
 add_subdirectory(qt3dcsg)
 
