@@ -121,7 +121,6 @@ private slots:
 
     void testNodeConstruct()
     {
-        const auto expectedNormal = QVector3D{-1, 0, 0};
         const auto maybeNode = Node::fromPolygons(cube().polygons());
 
         if (std::holds_alternative<Error>(maybeNode))
@@ -147,6 +146,7 @@ private slots:
 
         QCOMPARE(node.allPolygons().count(), 6);
 
+        const auto expectedNormal = QVector3D{-1, 0, 0};
         const auto plane = node.plane();
 
         QVERIFY(!plane.isNull());
@@ -156,7 +156,6 @@ private slots:
 
     void testNodeInvert()
     {
-        const auto expectedNormal = QVector3D{1, 0, 0};
         const auto maybeNode = Node::fromPolygons(cube().polygons());
 
         if (std::holds_alternative<Error>(maybeNode))
@@ -182,6 +181,7 @@ private slots:
 
         QCOMPARE(node.allPolygons().count(), 6);
 
+        const auto expectedNormal = QVector3D{1, 0, 0};
         const auto plane = node.plane();
 
         QVERIFY(!plane.isNull());
