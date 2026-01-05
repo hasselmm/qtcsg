@@ -121,18 +121,14 @@ private slots:
 
     void testNodeConstruct()
     {
-        const auto maybeNode = Node::fromPolygons(cube().polygons());
-
-        if (std::holds_alternative<Error>(maybeNode))
-            QCOMPARE(std::get<Error>(maybeNode), Error::NoError);
-
-        QVERIFY(std::holds_alternative<Node>(maybeNode));
-        const auto node = std::get<Node>(maybeNode);
+        const auto node = Node::fromPolygons(cube().polygons());
+        QCOMPARE(node.error_or(Error::NoError), Error::NoError);
+        QVERIFY(node.has_value());
 
         {
             auto depth = 0;
 
-            for (auto subNode = &node; subNode; subNode = subNode->back().get(), ++depth) {
+            for (auto subNode = &node.value(); subNode; subNode = subNode->back().get(), ++depth) {
                 QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().count())),
                          make_pair(depth, 1));
                 QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().constFirst().vertices().count())),
@@ -144,10 +140,10 @@ private slots:
             }
         }
 
-        QCOMPARE(node.allPolygons().count(), 6);
+        QCOMPARE(node->allPolygons().count(), 6);
 
         const auto expectedNormal = QVector3D{-1, 0, 0};
-        const auto plane = node.plane();
+        const auto plane = node->plane();
 
         QVERIFY(!plane.isNull());
         QCOMPARE(plane.normal(), expectedNormal);
@@ -156,13 +152,11 @@ private slots:
 
     void testNodeInvert()
     {
-        const auto maybeNode = Node::fromPolygons(cube().polygons());
+        const auto initialNode = Node::fromPolygons(cube().polygons());
+        QCOMPARE(initialNode.error_or(Error::NoError), Error::NoError);
+        QVERIFY(initialNode.has_value());
 
-        if (std::holds_alternative<Error>(maybeNode))
-            QCOMPARE(std::get<Error>(maybeNode), Error::NoError);
-
-        QVERIFY(std::holds_alternative<Node>(maybeNode));
-        const auto node = std::get<Node>(maybeNode).inverted();
+        const auto node = initialNode->inverted();
 
         {
             auto depth = 0;

@@ -611,13 +611,13 @@ Geometry intersect(Geometry lhs, Geometry rhs, int limit)
     return Geometry{a.allPolygons()};
 }
 
-std::variant<Node, Error> Node::fromPolygons(QList<Polygon> polygons, int limit)
+std::expected<Node, Error> Node::fromPolygons(QList<Polygon> polygons, int limit)
 {
     auto node = Node{};
 
     if (const auto error = node.build(std::move(polygons), limit);
         reportError(lcNode(), error, "Could not build BSP tree from polygons"))
-        return {error};
+        return std::unexpected{error};
 
     return {std::move(node)};
 }
