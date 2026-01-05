@@ -22,6 +22,7 @@
 #include <QVariant>
 #include <QVector3D>
 
+#include <expected>
 #include <memory>
 
 namespace Qt3DCSG {
@@ -204,8 +205,8 @@ class Node
 public:
     Node() = default;
 
-    static std::variant<Node, Error> fromPolygons(QList<Polygon> polygons,
-                                                  int limit = defaultRecursionLimit());
+    static std::expected<Node, Error> fromPolygons(QList<Polygon> polygons,
+                                                   int limit = defaultRecursionLimit());
 
     [[nodiscard]] auto plane() const { return m_plane; }
     [[nodiscard]] auto polygons() const { return m_polygons; }
