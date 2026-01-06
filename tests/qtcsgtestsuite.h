@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef QTCSGTEST_H
-#define QTCSGTEST_H
+#ifndef QTCSGTESTSUITE_H
+#define QTCSGTESTSUITE_H
 
 #include <QMatrix4x4>
 #include <QTest>
@@ -187,4 +187,4 @@ inline bool qCompare(const T &a, const T &b,
 
 #endif // defined(__cpp_concepts) && __cpp_concepts >= 202002L
 
-#endif // QTCSGTEST_H
+#endif // QTCSGTESTSUITE_H
