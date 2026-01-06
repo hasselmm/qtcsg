@@ -36,8 +36,10 @@ private slots:
 
         QCOMPARE(polygons.count(), 6);
 
-        for (int i = 0; i < polygons.count(); ++i)
-            QCOMPARE(make_pair(i, static_cast<int>(polygons[i].vertices().count())), make_pair(i, 4));
+        for (auto i = 0; i < polygons.count(); ++i) {
+            QCOMPARE(make_pair(i, qsizetype{polygons[i].vertices().count()}),
+                     make_pair(i, qsizetype{4}));
+        }
 
         const auto vertices = polygons[0].vertices();
         const auto expectedNormal = QVector3D{-1, 0, 0};
@@ -58,9 +60,9 @@ private slots:
 
         QCOMPARE(polygons.count(), 128);
 
-        for (int i = 0; i < polygons.count(); ++i) {
-            QCOMPARE(make_pair(i, static_cast<int>(polygons[i].vertices().count())),
-                     make_pair(i, i % 8 == 0 || i % 8 == 7 ? 3 : 4));
+        for (auto i = 0; i < polygons.count(); ++i) {
+            QCOMPARE(make_pair(i, qsizetype{polygons[i].vertices().count()}),
+                     make_pair(i, qsizetype{i % 8 == 0 || i % 8 == 7 ? 3 : 4}));
         }
     }
 
@@ -70,9 +72,9 @@ private slots:
 
         QCOMPARE(polygons.count(), 48);
 
-        for (int i = 0; i < polygons.count(); ++i) {
-            QCOMPARE(make_pair(i, static_cast<int>(polygons[i].vertices().count())),
-                     make_pair(i, i % 3 != 1 ? 3 : 4));
+        for (auto i = 0; i < polygons.count(); ++i) {
+            QCOMPARE(make_pair(i, qsizetype{polygons[i].vertices().count()}),
+                     make_pair(i, qsizetype{i % 3 != 1 ? 3 : 4}));
         }
     }
 
@@ -119,7 +121,6 @@ private slots:
 
     void testNodeConstruct()
     {
-        const auto expectedNormal = QVector3D{-1, 0, 0};
         const auto maybeNode = Node::fromPolygons(cube().polygons());
 
         if (std::holds_alternative<Error>(maybeNode))
@@ -136,15 +137,16 @@ private slots:
                          make_pair(depth, 1));
                 QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().constFirst().vertices().count())),
                          make_pair(depth, 4));
-                QCOMPARE(make_pair(depth, !!subNode->front()),
+                QCOMPARE(make_pair(depth, subNode->front() != nullptr),
                          make_pair(depth, false));
-                QCOMPARE(make_pair(depth, !!subNode->back()),
+                QCOMPARE(make_pair(depth, subNode->back() != nullptr),
                          make_pair(depth, depth < 5));
             }
         }
 
         QCOMPARE(node.allPolygons().count(), 6);
 
+        const auto expectedNormal = QVector3D{-1, 0, 0};
         const auto plane = node.plane();
 
         QVERIFY(!plane.isNull());
@@ -154,7 +156,6 @@ private slots:
 
     void testNodeInvert()
     {
-        const auto expectedNormal = QVector3D{1, 0, 0};
         const auto maybeNode = Node::fromPolygons(cube().polygons());
 
         if (std::holds_alternative<Error>(maybeNode))
@@ -171,15 +172,16 @@ private slots:
                          make_pair(depth, 1));
                 QCOMPARE(make_pair(depth, static_cast<int>(subNode->polygons().constFirst().vertices().count())),
                          make_pair(depth, 4));
-                QCOMPARE(make_pair(depth, !!subNode->front()),
+                QCOMPARE(make_pair(depth, subNode->front() != nullptr),
                          make_pair(depth, depth < 5));
-                QCOMPARE(make_pair(depth, !!subNode->back()),
+                QCOMPARE(make_pair(depth, subNode->back() != nullptr),
                          make_pair(depth, false));
             }
         }
 
         QCOMPARE(node.allPolygons().count(), 6);
 
+        const auto expectedNormal = QVector3D{1, 0, 0};
         const auto plane = node.plane();
 
         QVERIFY(!plane.isNull());
@@ -262,9 +264,9 @@ private slots:
         QCOMPARE(front.length(), 1);
         QCOMPARE(back.length(), 1);
 
-        for (const auto &v: front.constFirst().vertices())
+        for (const auto &frontVertices = front.constFirst().vertices(); const auto &v : frontVertices)
             QVERIFY2(v.position().x() >= 0, "All front vertices must have x >= 0");
-        for (const auto &v: back.constFirst().vertices())
+        for (const auto &backVertices = back.constFirst().vertices(); const auto &v : backVertices)
             QVERIFY2(v.position().x() <= 0, "All back vertices must have x <= 0");
     }
 

@@ -419,9 +419,9 @@ Geometry parseGeometry(QString expression)
 Geometry cube(QVector3D center, QVector3D size)
 {
     const auto makePolygon = [center, size](std::array<int, 4> indices, QVector3D normal) {
-        QList<Vertex> vertices;
-
+        auto vertices = QList<Vertex>{};
         vertices.reserve(indices.size());
+
         std::transform(indices.begin(), indices.end(), std::back_inserter(vertices), [=](int i) {
             const auto directions = QVector3D{
                 i & 1 ? +1.0f : -1.0f,
@@ -651,7 +651,7 @@ QList<Polygon> Node::clipPolygons(QList<Polygon> polygons) const
     auto front = QList<Polygon>{};
     auto back = QList<Polygon>{};
 
-    for (const auto &p: polygons)
+    for (const auto &p : std::as_const(polygons))
         p.split(m_plane, &front, &back, &front, &back);
 
     if (m_front)

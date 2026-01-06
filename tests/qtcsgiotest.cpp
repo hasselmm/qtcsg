@@ -35,7 +35,8 @@ private slots:
     {
         QTest::addColumn<const FileFormat<Geometry> *>("format");
 
-        for (const auto format: FileFormat<Geometry>::supported())
+        for (const auto &supportedFileFormats = FileFormat<Geometry>::supported();
+             const auto format : supportedFileFormats)
             QTest::addRow("%s", format->id().toLatin1().constData()) << format;
     }
 

@@ -20,7 +20,8 @@ target_link_libraries(QtCSGDemo PRIVATE Qt3DCSG Qt::3DExtras Qt::Widgets)
 ##    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
 #endif()
 
-set_target_properties(QtCSGDemo PROPERTIES
+set_target_properties(
+    QtCSGDemo PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER qtcsg.taschenorakel.de
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}

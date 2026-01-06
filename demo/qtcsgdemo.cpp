@@ -242,9 +242,11 @@ QEntity *Application::createUnionTest(QEntity *parent)
 
 void Application::collectEntities(QEntity *root)
 {
-    for (const auto scene: root->childNodes()) {
-        for (const auto node: scene->childNodes()) {
-            if (const auto entity = dynamic_cast<QEntity *>(node))
+    for (const auto &sceneNodes = root->childNodes();
+         const auto scene : sceneNodes) {
+        for (const auto &childNodes = scene->childNodes();
+             const auto child : childNodes) {
+            if (const auto entity = dynamic_cast<QEntity *>(child))
                 m_entities += entity;
         }
     }
@@ -254,8 +256,9 @@ void Application::onWireframeBoxToggled(bool checked)
 {
     const auto &renderStyle = checked ? s_wireframeVisible : s_wireframeHidden;
 
-    for (const auto entity: m_entities) {
-        for (const auto material: entity->componentsOfType<WireframeMaterial>()) {
+    for (const auto entity : std::as_const(m_entities)) {
+        for (const auto &materialList = entity->componentsOfType<WireframeMaterial>();
+             const auto material : materialList) {
             auto diffuseColor = material->diffuse();
             diffuseColor.setAlphaF(renderStyle.diffuseAlpha);
 
