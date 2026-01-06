@@ -7,134 +7,167 @@ on:
     branches: [ main ]
 
 jobs:
-  Build-on-Ubuntu-Qt5:
-    name: "Build on Ubuntu for Qt5"
-    runs-on: ubuntu-22.04
+  MatrixBuild:
+    name: "Qt ${{ matrix.qt_version }} on ${{ matrix.platform }} with ${{ matrix.compiler }}"
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - platform:   ubuntu-24.04
+            packages:   g++-11
+            compiler:   gcc-11
+            cc_path:    /usr/bin/gcc-11
+            cxx_path:   /usr/bin/g++-11
+            ninja_path: $IQTA_TOOLS/Ninja/ninja
+            qt_version: 5.15.2
+            qt_host:    linux
+            qt_arch:    gcc_64
+            qt_tools:   tools_ninja
+
+          - platform:   ubuntu-24.04
+            packages:   g++-12
+            compiler:   gcc-12
+            cc_path:    /usr/bin/gcc-12
+            cxx_path:   /usr/bin/g++-12
+            ninja_path: $IQTA_TOOLS/Ninja/ninja
+            qt_version: 6.5.3
+            qt_host:    linux
+            qt_arch:    gcc_64
+            qt_tools:   tools_ninja
+            qt_modules: 'qt3d'
+
+          - platform:   ubuntu-24.04
+            packages:   g++-13
+            compiler:   gcc-13
+            cc_path:    /usr/bin/gcc-13
+            cxx_path:   /usr/bin/g++-13
+            ninja_path: $IQTA_TOOLS/Ninja/ninja
+            qt_version: 6.8.3
+            qt_host:    linux
+            qt_arch:    linux_gcc_64
+            qt_tools:   tools_ninja
+            qt_modules: 'qt3d'
+
+          - platform:   ubuntu-24.04
+            packages:   g++-14
+            compiler:   gcc-14
+            cc_path:    /usr/bin/gcc-14
+            cxx_path:   /usr/bin/g++-14
+            ninja_path: $IQTA_TOOLS/Ninja/ninja
+            qt_version: 6.10.2
+            qt_host:    linux
+            qt_arch:    linux_gcc_64
+            qt_tools:   tools_ninja
+            qt_modules: 'qt3d'
+
+
+          - platform:   ubuntu-24.04
+            packages:   clang-16
+            compiler:   clang-16
+            cc_path:    /usr/bin/clang-16
+            cxx_path:   /usr/bin/clang++-16
+            ninja_path: $IQTA_TOOLS/Ninja/ninja
+            qt_version: 6.8.3
+            qt_host:    linux
+            qt_arch:    linux_gcc_64
+            qt_tools:   tools_ninja
+            qt_modules: 'qt3d'
+
+          - platform:   ubuntu-24.04
+            packages:   clang-20
+            compiler:   clang-20
+            cc_path:    /usr/bin/clang-20
+            cxx_path:   /usr/bin/clang++-20
+            ninja_path: $IQTA_TOOLS/Ninja/ninja
+            qt_version: 6.10.2
+            qt_host:    linux
+            qt_arch:    linux_gcc_64
+            qt_tools:   tools_ninja
+            qt_modules: 'qt3d'
+
+
+          - platform:   windows-2025
+            compiler:   mingw-11.2
+            cc_path:    $env:IQTA_TOOLS/mingw1120_64/bin/gcc.exe
+            cxx_path:   $env:IQTA_TOOLS/mingw1120_64/bin/g++.exe
+            extra_path: $env:IQTA_TOOLS\mingw1120_64\bin;
+            ninja_path: $env:IQTA_TOOLS/Ninja/ninja.exe
+            qt_version: 5.15.2
+            qt_host:    windows
+            qt_arch:    win64_mingw81
+            qt_tools:   tools_ninja tools_mingw90
+
+          - platform:   windows-2025
+            compiler:   mingw-11.2
+            cc_path:    $env:IQTA_TOOLS/mingw1310_64/bin/gcc.exe
+            cxx_path:   $env:IQTA_TOOLS/mingw1310_64/bin/g++.exe
+            extra_path: $env:IQTA_TOOLS\mingw1310_64\bin;
+            ninja_path: $env:IQTA_TOOLS/Ninja/ninja.exe
+            qt_version: 6.10.2
+            qt_host:    windows
+            qt_arch:    win64_mingw
+            qt_tools:   tools_ninja tools_mingw1310
+            qt_modules: 'qt3d'
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
+      - name: Install packages
+        if: matrix.packages
+        run: |
+          sudo apt update
+          sudo apt install ${{ matrix.packages }}
+
+      - name: "Install Qt ${{ matrix.qt_version }}"
+        uses: jurplel/install-qt-action@v4
         with:
-          aqtversion: '==3.1.*'
-          version: '5.15.2'
-          host: 'linux'
-          target: 'desktop'
-          arch: 'gcc_64'
-          tools: 'tools_ninja'
-          cache: true
+          aqtversion: '==3.3.*'
+          version:    ${{ matrix.qt_version }}
+          host:       ${{ matrix.qt_host }}
+          arch:       ${{ matrix.qt_arch }}
+          target:     desktop
+          modules:    ${{ matrix.qt_modules }}
+          tools:      ${{ matrix.qt_tools }}
+          cache:      true
 
       - name: Set up compiler cache
         uses: chocobo1/setup-ccache-action@v1
         with:
           ccache_options: |
             max_size=100M
-          override_cache_key: ccache-linux-gcc-x86_64
+          override_cache_key: ccache-linux-${{ matrix.compiler }}-x86_64
           update_packager_index: false
 
       - name: Configure project
         run: >
           mkdir build && cd build && cmake -GNinja
-          -DCMAKE_C_COMPILER:FILEPATH=/usr/bin/gcc
-          -DCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/g++
-          -DCMAKE_MAKE_PROGRAM:FILEPATH=$IQTA_TOOLS/Ninja/ninja
+          -DCMAKE_C_COMPILER:FILEPATH=${{ matrix.cc_path }}
+          -DCMAKE_CXX_COMPILER:FILEPATH=${{ matrix.cxx_path }}
+          -DCMAKE_MAKE_PROGRAM:FILEPATH=${{ matrix.ninja_path }}
           ..
 
       - name: Build project
         run: cd build && cmake --build . --target all -- -k0
 
+      - name: Modify PATH for testing
+        if: matrix.extra_path
+        run: echo "${{ matrix.extra_path }}" >> $env:GITHUB_PATH
+
       - name: Test project
-        run: cd build && ctest --rerun-failed --output-on-failure
+        run: cd build && ctest --verbose --output-junit test-results.xml
         env:
           QT_QPA_PLATFORM: offscreen
 
-  Build-on-Ubuntu-Qt6:
-    name: "Build on Ubuntu for Qt6"
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          submodules: true
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          aqtversion: '==3.1.*'
-          version: '6.6.1'
-          host: 'linux'
-          target: 'desktop'
-          arch: 'gcc_64'
-          modules: 'qt3d'
-          tools: 'tools_ninja'
-          cache: true
-
-      - name: Set up compiler cache
-        uses: chocobo1/setup-ccache-action@v1
-        with:
-          ccache_options: |
-            max_size=100M
-          override_cache_key: ccache-linux-clang-x86_64
-          update_packager_index: false
-
-      - name: Configure project
-        run: >
-          mkdir build && cd build && cmake -GNinja
-          -DCMAKE_C_COMPILER:FILEPATH=/usr/bin/clang-15
-          -DCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/clang++-15
-          -DCMAKE_MAKE_PROGRAM:FILEPATH=$IQTA_TOOLS/Ninja/ninja
-          ..
-
-      - name: Build project
-        run: cd build && cmake --build . --target all -- -k0
-
-      - name: Test project
-        run: cd build && ctest --rerun-failed --output-on-failure
-        env:
-          QT_QPA_PLATFORM: offscreen
-
-  Build-on-Windows-Qt6:
-    name: "Build on Windows for Qt6"
-    runs-on: windows-2022
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          aqtversion: '==3.1.*'
-          version: '6.6.1'
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win64_mingw'
-          modules: 'qt3d'
-          tools: 'tools_mingw90 tools_ninja'
-          cache: true
-
-      - name: Set up compiler cache
-        uses: chocobo1/setup-ccache-action@v1
-        with:
-          ccache_options: |
-            max_size=100M
-          override_cache_key: ccache-windows-mingw64
-          windows_compile_environment: msvc # guess "windows_package_manager: choco" would be a better name
-
-      - name: Configure project
-        run: >
-          mkdir build && cd build && cmake -GNinja
-          -DCMAKE_C_COMPILER:FILEPATH=$env:IQTA_TOOLS/mingw1120_64/bin/gcc.exe
-          -DCMAKE_CXX_COMPILER:FILEPATH=$env:IQTA_TOOLS/mingw1120_64/bin/g++.exe
-          -DCMAKE_MAKE_PROGRAM:FILEPATH=$env:IQTA_TOOLS/Ninja/ninja.exe
-          ..
-
-      - name: Build project
-        run: cd build && cmake --build . --target all -- -k0
-
-      - name: Test project
-        run: cd build && ctest --rerun-failed --output-on-failure
+          name: "test-results-qt-${{ matrix.qt_version }}-${{ matrix.platform }}-${{ matrix.compiler }}"
+          path: |
+            build/test-results.xml
+            build/Testing/Temporary/LastTest.log
