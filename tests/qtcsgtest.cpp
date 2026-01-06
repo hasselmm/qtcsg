@@ -36,8 +36,10 @@ private slots:
 
         QCOMPARE(polygons.count(), 6);
 
-        for (int i = 0; i < polygons.count(); ++i)
-            QCOMPARE(make_pair(i, static_cast<int>(polygons[i].vertices().count())), make_pair(i, 4));
+        for (auto i = 0; i < polygons.count(); ++i) {
+            QCOMPARE(make_pair(i, static_cast<int>(polygons[i].vertices().count())),
+                     make_pair(i, 4));
+        }
 
         const auto vertices = polygons[0].vertices();
         const auto expectedNormal = QVector3D{-1, 0, 0};
@@ -58,7 +60,7 @@ private slots:
 
         QCOMPARE(polygons.count(), 128);
 
-        for (int i = 0; i < polygons.count(); ++i) {
+        for (auto i = 0; i < polygons.count(); ++i) {
             QCOMPARE(make_pair(i, static_cast<int>(polygons[i].vertices().count())),
                      make_pair(i, i % 8 == 0 || i % 8 == 7 ? 3 : 4));
         }
@@ -70,7 +72,7 @@ private slots:
 
         QCOMPARE(polygons.count(), 48);
 
-        for (int i = 0; i < polygons.count(); ++i) {
+        for (auto i = 0; i < polygons.count(); ++i) {
             QCOMPARE(make_pair(i, static_cast<int>(polygons[i].vertices().count())),
                      make_pair(i, i % 3 != 1 ? 3 : 4));
         }
