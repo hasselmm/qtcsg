@@ -6,6 +6,7 @@ endfunction()
 
 add_library(
     QtCSGTestSuite
+    qtcsgtestsuite.cpp
     qtcsgtestsuite.h
 )
 
