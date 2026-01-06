@@ -401,9 +401,9 @@ QtCSG::Geometry geometry(QGeometry *geometry, QMatrix4x4 transformation)
             const auto ib = index.at(i + 1);
             const auto ic = index.at(i + 2);
 
-            auto va = Vertex{transformation * position.at(ia), normal.at(ia)};
-            auto vb = Vertex{transformation * position.at(ib), normal.at(ib)};
-            auto vc = Vertex{transformation * position.at(ic), normal.at(ic)};
+            auto va = Vertex{transformation.map(position.at(ia)), normal.at(ia)};
+            auto vb = Vertex{transformation.map(position.at(ib)), normal.at(ib)};
+            auto vc = Vertex{transformation.map(position.at(ic)), normal.at(ic)};
 
             polygons += Polygon{{std::move(va), std::move(vb), std::move(vc)}};
         }
