@@ -16,11 +16,17 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#ifndef QTCSGTEST_H
-#define QTCSGTEST_H
+#ifndef QTCSGTESTSUITE_H
+#define QTCSGTESTSUITE_H
 
 #include <QMatrix4x4>
 #include <QTest>
+
+namespace QtCSG {
+class Plane;
+class Polygon;
+class Vertex;
+}
 
 namespace QtCSG::Tests::Internal {
 
@@ -128,9 +134,9 @@ inline bool qCompare(const QMatrix4x4 &a,const QMatrix4x4 &b,
 
 } // namespace QTest
 
-#if defined(__cpp_concepts) && __cpp_concepts >= 202002L
-
 namespace QtCSG::Tests::Internal {
+
+#if __cpp_concepts >= 202002L
 
 /// This concept provides that the given type has a fields() method.
 template<class T>
@@ -138,13 +144,15 @@ concept HasFieldsMethod = requires(T *instance) {
     instance->fields();
 };
 
+#endif // __cpp_concepts >= 202002L
+
 /// Compares two objects with a fields() method that returns a tuple.
 /// This is useful to enable fully compare of the fields without
 /// implementing a custom version of qFuzzyCompare.
 ///
 /// Note that this function has to occur after all other qCompare()
 /// implemenations to ensure all other implemenations get picked up.
-template<std::size_t N, HasFieldsMethod T>
+template<std::size_t N, typename T>
 inline bool compareFields(const T &a, const T &b,
                           const char *actual, const char *expected,
                           const char *file, int line)
@@ -169,6 +177,8 @@ inline bool compareFields(const T &a, const T &b,
 
 namespace QTest {
 
+#if __cpp_concepts >= 202002L
+
 /// Compares two objects with a fields() method that returns a tuple.
 /// This is useful to enable fully compare of the fields without
 /// implementing a custom version of qFuzzyCompare.
@@ -176,15 +186,22 @@ namespace QTest {
 /// Note that this function has to occur after all other qCompare()
 /// implemenations to ensure all other implemenations get picked up.
 template<QtCSG::Tests::Internal::HasFieldsMethod T>
-inline bool qCompare(const T &a, const T &b,
-                     const char *actual, const char *expected,
-                     const char *file, int line)
+inline bool qCompare(const T &a, const T &b, const char *actual, const char *expected, const char *file, int line)
 {
     return QtCSG::Tests::Internal::compareFields<0>(a, b, actual, expected, file, line);
 }
 
-} // QTest
+#else
 
-#endif // defined(__cpp_concepts) && __cpp_concepts >= 202002L
+#define QTCSGTEST_DECLARE_COMPARE(T) \
+bool qCompare(const T &a, const T &b, const char *actual, const char *expected, const char *file, int line);
 
-#endif // QTCSGTEST_H
+QTCSGTEST_DECLARE_COMPARE(QtCSG::Polygon)
+QTCSGTEST_DECLARE_COMPARE(QtCSG::Plane)
+QTCSGTEST_DECLARE_COMPARE(QtCSG::Vertex)
+
+#endif // __cpp_concepts >= 202002L
+
+} // namespace QTest
+
+#endif // QTCSGTESTSUITE_H
