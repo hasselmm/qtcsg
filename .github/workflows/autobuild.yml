@@ -64,8 +64,8 @@ jobs:
 
 
           - platform:   ubuntu-24.04
-            packages:   clang-16
             compiler:   clang-16
+            packages:   clang-16 libc++-16-dev libc++abi-16-dev
             cc_path:    /usr/bin/clang-16
             cxx_path:   /usr/bin/clang++-16
             ninja_path: $IQTA_TOOLS/Ninja/ninja
@@ -76,8 +76,8 @@ jobs:
             qt_modules: 'qt3d'
 
           - platform:   ubuntu-24.04
-            packages:   clang-20
             compiler:   clang-20
+            packages:   clang-20 libc++-20-dev libc++abi-20-dev
             cc_path:    /usr/bin/clang-20
             cxx_path:   /usr/bin/clang++-20
             ninja_path: $IQTA_TOOLS/Ninja/ninja
