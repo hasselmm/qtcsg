@@ -25,11 +25,16 @@ add_compile_definitions(
 
 add_compile_options(
     $<$<COMPILE_LANGUAGE:CXX>:-Werror=missing-declarations>
+    $<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++>
     -Wall -Wextra
     -Werror=sign-compare
     -Werror=switch
     -Werror=unused
     -Werror=type-limits
+)
+
+add_link_options(
+    $<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++>
 )
 
 include(QtCSGDebug)
