@@ -7,7 +7,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -48,6 +48,8 @@ set(Qt${QT_VERSION_MAJOR}_DIR "${QT_DIR}")
 find_package(Qt${QT_VERSION_MAJOR} ${QT_VERSION} REQUIRED COMPONENTS ${QT_MODULES})
 
 include(QtCSGBackports)
+
+include_directories(expected/include)
 
 add_subdirectory(qtcsg)
 add_subdirectory(qt3dcsg)
