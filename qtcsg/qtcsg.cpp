@@ -24,6 +24,7 @@
 
 #include <QRegularExpression>
 #include <cmath>
+#include <numbers>
 
 namespace QtCSG {
 
@@ -34,6 +35,7 @@ Q_LOGGING_CATEGORY(lcNode,      "qtcsg.node");
 Q_LOGGING_CATEGORY(lcOperator,  "qtcsg.operator");
 
 using Utils::reportError;
+using std::numbers::pi_v;
 
 template<class T>
 void flip(T &o)
@@ -48,6 +50,11 @@ auto matchGlobally(const QRegularExpression &pattern, QStringView subject)
 #else
     return pattern.globalMatch(std::move(subject));
 #endif
+}
+
+auto vector3DFromDouble(double x, double y, double z)
+{
+    return QVector3D{static_cast<float>(x), static_cast<float>(y), static_cast<float>(z)};
 }
 
 } // namespace
@@ -378,7 +385,7 @@ Geometry parseGeometry(QString expression)
 
     if (argList != u")") {
         if (auto it = matchGlobally(s_argPattern, argList); it.hasNext()) {
-            auto expectedStart = 0;
+            auto expectedStart = qsizetype{0};
 
             while (it.hasNext()) {
                 const auto match = it.next();
@@ -455,10 +462,13 @@ Geometry sphere(QVector3D center, float radius, int slices, int stacks)
     auto polygons = QList<Polygon>{};
 
     const auto vertex = [center, radius, slices, stacks](int i, int j) {
-        const auto theta = 2 * M_PI * i / slices;
-        const auto phi = M_PI * j / stacks;
+        const auto theta = 2 * pi_v<double> * i / slices;
+        const auto phi = pi_v<double> * j / stacks;
 
-        const auto normal = QVector3D{cosf(theta) * sinf(phi), cosf(phi), sinf(theta) * sinf(phi)};
+        const auto normal = vector3DFromDouble(std::cos(theta) * std::sin(phi),
+                                                                 std::cos(phi),
+                                               std::sin(theta) * std::sin(phi));
+
         return Vertex{center + normal * radius, normal};
     };
 
@@ -492,12 +502,14 @@ Geometry cylinder(QVector3D start, QVector3D end, float radius, int slices)
     const auto vertexStart = Vertex{start, -axisZ};
     const auto vertexEnd = Vertex{end, axisZ};
 
-    const auto point = [=](int stack, int slice, int normalBlend) {
-        const auto phi = 2 * M_PI * slice / slices;
-        const auto out = (axisX * cosf(phi)) + (axisY * sinf(phi));
-        auto pos = start + (ray * stack) + (out * radius);
-        auto normal = out * (1 - abs(normalBlend)) + (axisZ * normalBlend);
-        return Vertex{std::move(pos), std::move(normal)};
+    const auto point = [=](int stack, int slice, float normalBlend) {
+        const auto phi = static_cast<float>(2 * pi_v<double> * slice / slices);
+        const auto out = axisX * cosf(phi) + axisY * sinf(phi);
+
+        auto position = start + ray * static_cast<float>(stack) + out * radius;
+        auto normal   = out * (1.0f - abs(normalBlend)) + (axisZ * normalBlend);
+
+        return Vertex{std::move(position), std::move(normal)};
     };
 
     for (auto i = 0; i < slices; ++i) {

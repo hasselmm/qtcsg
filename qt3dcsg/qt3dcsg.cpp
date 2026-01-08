@@ -122,7 +122,11 @@ public:
     [[nodiscard]] bool isValid() const { return m_attribute && !m_data.isEmpty(); }
 
     /// The attribute's entry at the given index. Returns `nullptr` on error.
-    [[nodiscard]] const void *entry(int index) const;
+    [[nodiscard]] const void *entry(qsizetype index) const;
+
+    template<typename T>
+    [[nodiscard]] const T *entry(qsizetype index) const
+    { return reinterpret_cast<const T *>(entry(index)); }
 
 private:
     [[nodiscard]] size_t elementSize() const;
@@ -140,10 +144,10 @@ public:
     using AttributeReaderBase::AttributeReaderBase;
 
     [[nodiscard]] bool isValid() const;
-    [[nodiscard]] T at(int index) const;
+    [[nodiscard]] T at(qsizetype index) const;
 };
 
-const void *AttributeReaderBase::entry(int index) const
+const void *AttributeReaderBase::entry(qsizetype index) const
 {
     const auto offset = stride() * index + m_attribute->byteOffset();
     static_assert(std::is_unsigned_v<decltype(offset)>);
@@ -190,7 +194,7 @@ size_t AttributeReaderBase::stride() const
 }
 
 template<>
-bool AttributeReader<int>::isValid() const
+bool AttributeReader<qsizetype>::isValid() const
 {
     if (!AttributeReaderBase::isValid())
         return false;
@@ -216,21 +220,21 @@ bool AttributeReader<int>::isValid() const
 }
 
 template<>
-int AttributeReader<int>::at(int index) const
+qsizetype AttributeReader<qsizetype>::at(qsizetype index) const
 {
     switch (attribute()->vertexBaseType()) {
     case QAttribute::Byte:
-        return *reinterpret_cast<const qint8 *>(entry(index));
+        return *entry<qint8>(index);
     case QAttribute::UnsignedByte:
-        return *reinterpret_cast<const quint8 *>(entry(index));
+        return *entry<quint8>(index);
     case QAttribute::Short:
-        return *reinterpret_cast<const short *>(entry(index));
+        return *entry<short>(index);
     case QAttribute::UnsignedShort:
-        return *reinterpret_cast<const ushort *>(entry(index));
+        return *entry<ushort>(index);
     case QAttribute::Int:
-        return *reinterpret_cast<const int *>(entry(index));
+        return *entry<int>(index);
     case QAttribute::UnsignedInt:
-        return *reinterpret_cast<const uint *>(entry(index));
+        return *entry<uint>(index);
 
     case QAttribute::Double:
     case QAttribute::Float:
@@ -255,7 +259,7 @@ bool AttributeReader<QVector3D>::isValid() const
 }
 
 template<>
-QVector3D AttributeReader<QVector3D>::at(int index) const
+QVector3D AttributeReader<QVector3D>::at(qsizetype index) const
 {
     const auto makeVector = [](auto p) {
         const auto x = static_cast<float>(p[0]);
@@ -266,23 +270,23 @@ QVector3D AttributeReader<QVector3D>::at(int index) const
 
     switch (attribute()->vertexBaseType()) {
     case QAttribute::Byte:
-        return makeVector(reinterpret_cast<const qint8 *>(entry(index)));
+        return makeVector(entry<qint8>(index));
     case QAttribute::UnsignedByte:
-        return makeVector(reinterpret_cast<const quint8 *>(entry(index)));
+        return makeVector(entry<quint8>(index));
     case QAttribute::Short:
-        return makeVector(reinterpret_cast<const short *>(entry(index)));
+        return makeVector(entry<short>(index));
     case QAttribute::UnsignedShort:
-        return makeVector(reinterpret_cast<const ushort *>(entry(index)));
+        return makeVector(entry<ushort>(index));
     case QAttribute::Int:
-        return makeVector(reinterpret_cast<const int *>(entry(index)));
+        return makeVector(entry<int>(index));
     case QAttribute::UnsignedInt:
-        return makeVector(reinterpret_cast<const uint *>(entry(index)));
+        return makeVector(entry<uint>(index));
     case QAttribute::HalfFloat:
-        return makeVector(reinterpret_cast<const qfloat16 *>(entry(index)));
+        return makeVector(entry<qfloat16>(index));
     case QAttribute::Float:
-        return makeVector(reinterpret_cast<const float *>(entry(index)));
+        return makeVector(entry<float>(index));
     case QAttribute::Double:
-        return makeVector(reinterpret_cast<const double *>(entry(index)));
+        return makeVector(entry<double>(index));
     }
 
     return {};
@@ -390,7 +394,7 @@ QtCSG::Geometry geometry(QGeometry *geometry, QMatrix4x4 transformation)
                                                      QAttribute::defaultPositionAttributeName());
     const auto normal = AttributeReader<QVector3D>(geometry, QAttribute::VertexAttribute,
                                                    QAttribute::defaultNormalAttributeName());
-    const auto index = AttributeReader<int>(geometry, QAttribute::IndexAttribute);
+    const auto index = AttributeReader<qsizetype>(geometry, QAttribute::IndexAttribute);
 
     if (position.isValid() && normal.isValid() && index.isValid()) {
         const auto count = index.attribute()->count();
