@@ -269,8 +269,8 @@ private:
 
 /// Construct a solid cylinder.
 /// The `slices` parameter controls the tessellation.
-[[nodiscard]] Geometry cylinder(QVector3D start, QVector3D end, float radius = 1, float slices = 16);
-[[nodiscard]] Geometry cylinder(QVector3D center = {}, float height = 2, float radius = 1, float slices = 16);
+[[nodiscard]] Geometry cylinder(QVector3D start, QVector3D end, float radius = 1, int slices = 16);
+[[nodiscard]] Geometry cylinder(QVector3D center = {}, float height = 2, float radius = 1, int slices = 16);
 
 /// Constructs a single geometry from simple expression:
 ///

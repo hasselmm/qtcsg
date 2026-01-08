@@ -480,7 +480,7 @@ Geometry sphere(QVector3D center, float radius, int slices, int stacks)
     return Geometry{std::move(polygons)};
 }
 
-Geometry cylinder(QVector3D start, QVector3D end, float radius, float slices)
+Geometry cylinder(QVector3D start, QVector3D end, float radius, int slices)
 {
     auto polygons = QList<Polygon>{};
 
@@ -509,7 +509,7 @@ Geometry cylinder(QVector3D start, QVector3D end, float radius, float slices)
     return Geometry{std::move(polygons)};
 }
 
-Geometry cylinder(QVector3D center, float height, float radius, float slices)
+Geometry cylinder(QVector3D center, float height, float radius, int slices)
 {
     return cylinder(center - QVector3D{0, height/2, 0},
                     center + QVector3D{0, height/2, 0},
