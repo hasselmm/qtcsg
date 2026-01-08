@@ -44,29 +44,41 @@ std::optional<T> parse(QStringView text)
 #if defined(__cpp_concepts) && __cpp_concepts >= 202002L
 
 template<class T>
+static constexpr int s_minimumEmplaceBackVersion = -1;
+
+template<class T>
+static constexpr int s_minimumEmplaceBackVersion<QList<T>> = QT_VERSION_CHECK(6, 0, 0);
+
+template<class T>
+static constexpr int s_minimumEmplaceBackVersion<QVarLengthArray<T>> = QT_VERSION_CHECK(6, 3, 0);
+
+template<class T>
 concept HasEmplaceBack = requires(T *object) {
-    object->emplaceBack(typename T::value_type{});
+    object->emplace_back(typename T::value_type{});
 };
 
-template<class T, typename... Args>
-void emplaceBack(QList<T> &list, Args... args)
+template<class Container, typename... Args>
+void emplaceBack(Container &container, Args... args)
 {
-    static_assert(HasEmplaceBack<QList<T>>
-                  || QT_VERSION_MAJOR < 6);
+    using T = Container::value_type;
 
-    if constexpr (HasEmplaceBack<QList<T>>) {
-        list.emplaceBack(std::forward<Args>(args)...);
+    static_assert(HasEmplaceBack<Container>
+                  || QT_VERSION < s_minimumEmplaceBackVersion<Container>);
+
+    if constexpr (HasEmplaceBack<Container>) {
+        container.emplace_back(std::forward<Args>(args)...);
     } else {
-        list.append(T{std::forward<Args>(args)...});
+        container.append(T{std::forward<Args>(args)...});
     }
 }
 
 #else
 
-template<class T, typename... Args>
-void emplaceBack(QList<T> &list, Args... args)
+template<class Container, typename... Args>
+void emplaceBack(Container &container, Args... args)
 {
-    list.append(T{std::forward<Args>(args)...});
+    using T = Container::value_type;
+    container.append(T{std::forward<Args>(args)...});
 }
 
 #endif
@@ -158,7 +170,7 @@ Geometry OffFileFormat::readGeometry(QIODevice *device) const
 
         case State::Faces:
             if (const auto n = parse<int>(line.section(' ', 0, 0))) {
-                auto indices = std::vector<uint>{};
+                auto indices = QVarLengthArray<uint>{};
                 indices.reserve(*n);
 
                 for (auto i = 1; i <= *n; ++i) {
@@ -166,7 +178,7 @@ Geometry OffFileFormat::readGeometry(QIODevice *device) const
                     static_assert(std::is_unsigned_v<std::remove_reference_t<decltype(*index)>>);
 
                     if (index && *index < vertices.size()) {
-                        indices.emplace_back(*index);
+                        emplaceBack(indices, *index);
                     } else {
                         qCWarning(lcInputOutput, "Invalid index at line %d, field %d", lineNumber, i);
                         return Geometry{Error::FileFormatError};
