@@ -47,10 +47,10 @@ void emplaceBack(QList<T> &list, Args... args)
 class OffFileFormat : public FileFormat<Geometry>
 {
 public:
-    QString id() const override { return "OFF"; }
-    bool accepts(QString fileName) const override;
-    Geometry readGeometry(QIODevice *device) const override;
-    Error writeGeometry(Geometry geometry, QIODevice *device) const override;
+    [[nodiscard]] QString id() const override { return "OFF"; }
+    [[nodiscard]] bool accepts(QString fileName) const override;
+    [[nodiscard]] Geometry readGeometry(QIODevice *device) const override;
+    [[nodiscard]] Error writeGeometry(Geometry geometry, QIODevice *device) const override;
 };
 
 bool OffFileFormat::accepts(QString fileName) const
