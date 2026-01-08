@@ -118,15 +118,15 @@ public:
         , m_data{data(attribute->buffer())}
     {}
 
-    auto attribute() const { return m_attribute; }
-    bool isValid() const { return m_attribute && !m_data.isEmpty(); }
+    [[nodiscard]] auto attribute() const { return m_attribute; }
+    [[nodiscard]] bool isValid() const { return m_attribute && !m_data.isEmpty(); }
 
     /// The attribute's entry at the given index. Returns `nullptr` on error.
-    const void *entry(int index) const;
+    [[nodiscard]] const void *entry(int index) const;
 
 private:
-    size_t elementSize() const;
-    size_t stride() const;
+    [[nodiscard]] size_t elementSize() const;
+    [[nodiscard]] size_t stride() const;
 
     const QAttribute *const m_attribute;
     const QByteArray m_data;
@@ -139,8 +139,8 @@ class AttributeReader : public AttributeReaderBase
 public:
     using AttributeReaderBase::AttributeReaderBase;
 
-    bool isValid() const;
-    T at(int index) const;
+    [[nodiscard]] bool isValid() const;
+    [[nodiscard]] T at(int index) const;
 };
 
 const void *AttributeReaderBase::entry(int index) const
