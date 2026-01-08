@@ -219,7 +219,7 @@ Error OffFileFormat::writeGeometry(Geometry geometry, QIODevice *device) const
         faces.emplace_back();
         faces.back().reserve(p.vertices().count());
 
-        for (const auto &v: p.vertices()) {
+        for (const auto &pv = p.vertices(); const auto &v : pv) {
             const auto p = v.position();
 
             auto it = std::find(vertices.begin(), vertices.end(), p);
@@ -299,7 +299,8 @@ const FileFormat<Geometry> *offFileFormat()
 
 Geometry readGeometry(QString fileName)
 {
-    for (const auto &fileFormat: FileFormat<Geometry>::supported()) {
+    for (const auto &supportedGeometryFormats = FileFormat<Geometry>::supported();
+         const auto &fileFormat : supportedGeometryFormats) {
         if (fileFormat->accepts(fileName))
             return readGeometry(fileFormat, std::move(fileName));
     }
@@ -310,7 +311,8 @@ Geometry readGeometry(QString fileName)
 
 Error writeGeometry(Geometry geometry, QString fileName)
 {
-    for (const auto &fileFormat: FileFormat<Geometry>::supported()) {
+    for (const auto &supportedGeometryFormats = FileFormat<Geometry>::supported();
+         const auto &fileFormat : supportedGeometryFormats) {
         if (fileFormat->accepts(fileName))
             return writeGeometry(fileFormat, std::move(geometry), std::move(fileName));
     }
