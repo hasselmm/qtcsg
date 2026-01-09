@@ -488,6 +488,7 @@ Geometry sphere(QVector3D center, float radius, int slices, int stacks)
     return Geometry{std::move(polygons)};
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 Geometry cylinder(QVector3D start, QVector3D end, float radius, int slices)
 {
     auto polygons = QList<Polygon>{};
@@ -500,6 +501,7 @@ Geometry cylinder(QVector3D start, QVector3D end, float radius, int slices)
     const auto vertexStart = Vertex{start, -axisZ};
     const auto vertexEnd = Vertex{end, axisZ};
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     const auto point = [=](int stack, int slice, float normalBlend) {
         const auto phi = static_cast<float>(2 * pi_v<double> * slice / slices);
         const auto out = axisX * cosf(phi) + axisY * sinf(phi);

@@ -224,6 +224,7 @@ QEntity *Application::createUnionTest(QEntity *parent)
 {
     const auto unionTest = new QEntity{parent};
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     const auto createUnion = [unionTest](float delta, float x, bool adjacent, QColor color) {
         const auto a = QtCSG::cube({-delta, adjacent ? 0 : -delta, adjacent ? 0 : +delta});
         const auto b = QtCSG::cube({+delta, adjacent ? 0 : +delta, adjacent ? 0 : -delta});
