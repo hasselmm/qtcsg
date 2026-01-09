@@ -7,38 +7,78 @@
 #include <QLoggingCategory>
 #include <QTextStream>
 
+#include <optional>
+
 namespace QtCSG {
 
 namespace {
 
 Q_LOGGING_CATEGORY(lcInputOutput, "qtcsg.io");
 
+template<typename T>
+T parseNumber(QStringView text, bool *isValid);
+
+template<>
+float parseNumber<float>(QStringView text, bool *isValid)
+{ return text.toFloat(isValid); }
+
+template<>
+int parseNumber<int>(QStringView text, bool *isValid)
+{ return text.toInt(isValid); }
+
+template<>
+uint parseNumber<uint>(QStringView text, bool *isValid)
+{ return text.toUInt(isValid); }
+
+template<typename T>
+std::optional<T> parse(QStringView text)
+{
+    auto isValid = false;
+
+    if (const auto value = parseNumber<T>(std::move(text), &isValid); isValid)
+        return value;
+
+    return std::nullopt;
+}
+
 #if defined(__cpp_concepts) && __cpp_concepts >= 202002L
 
 template<class T>
+static constexpr int s_minimumEmplaceBackVersion = -1;
+
+template<class T>
+static constexpr int s_minimumEmplaceBackVersion<QList<T>> = QT_VERSION_CHECK(6, 0, 0);
+
+template<class T>
+static constexpr int s_minimumEmplaceBackVersion<QVarLengthArray<T>> = QT_VERSION_CHECK(6, 3, 0);
+
+template<class T>
 concept HasEmplaceBack = requires(T *object) {
-    object->emplaceBack(typename T::value_type{});
+    object->emplace_back(typename T::value_type{});
 };
 
-template<class T, typename... Args>
-void emplaceBack(QList<T> &list, Args... args)
+template<class Container, typename... Args>
+void emplaceBack(Container &container, Args... args)
 {
-    static_assert(HasEmplaceBack<QList<T>>
-                  || QT_VERSION_MAJOR < 6);
+    using T = Container::value_type;
 
-    if constexpr (HasEmplaceBack<QList<T>>) {
-        list.emplaceBack(std::forward<Args>(args)...);
+    static_assert(HasEmplaceBack<Container>
+                  || QT_VERSION < s_minimumEmplaceBackVersion<Container>);
+
+    if constexpr (HasEmplaceBack<Container>) {
+        container.emplace_back(std::forward<Args>(args)...);
     } else {
-        list.append(T{std::forward<Args>(args)...});
+        container.append(T{std::forward<Args>(args)...});
     }
 }
 
 #else
 
-template<class T, typename... Args>
-void emplaceBack(QList<T> &list, Args... args)
+template<class Container, typename... Args>
+void emplaceBack(Container &container, Args... args)
 {
-    list.append(T{std::forward<Args>(args)...});
+    using T = Container::value_type;
+    container.append(T{std::forward<Args>(args)...});
 }
 
 #endif
@@ -47,10 +87,10 @@ void emplaceBack(QList<T> &list, Args... args)
 class OffFileFormat : public FileFormat<Geometry>
 {
 public:
-    QString id() const override { return "OFF"; }
-    bool accepts(QString fileName) const override;
-    Geometry readGeometry(QIODevice *device) const override;
-    Error writeGeometry(Geometry geometry, QIODevice *device) const override;
+    [[nodiscard]] QString id() const override { return "OFF"; }
+    [[nodiscard]] bool accepts(QString fileName) const override;
+    [[nodiscard]] Geometry readGeometry(QIODevice *device) const override;
+    [[nodiscard]] Error writeGeometry(Geometry geometry, QIODevice *device) const override;
 };
 
 bool OffFileFormat::accepts(QString fileName) const
@@ -68,9 +108,8 @@ Geometry OffFileFormat::readGeometry(QIODevice *device) const
     };
 
     auto state = State::Magic;
-    auto vertexCount = int{};
-    auto faceCount = int{};
-    auto ok = false;
+    auto vertexCount = 0;
+    auto faceCount = 0;
 
     auto stream = QTextStream{device};
     auto vertices = std::vector<QVector3D>{};
@@ -93,16 +132,16 @@ Geometry OffFileFormat::readGeometry(QIODevice *device) const
             break;
 
         case State::Header:
-            vertexCount = line.section(' ', 0, 0).toInt(&ok);
-
-            if (!ok) {
+            if (const auto number = parse<int>(line.section(' ', 0, 0))) {
+                vertexCount = *number;
+            } else {
                 qCWarning(lcInputOutput, "Invalid vertex count at line %d", lineNumber);
                 return Geometry{Error::FileFormatError};
             }
 
-            faceCount = line.section(' ', 1, 1).toInt(&ok);
-
-            if (!ok) {
+            if (const auto number = parse<int>(line.section(' ', 1, 1))) {
+                faceCount = *number;
+            } else {
                 qCWarning(lcInputOutput, "Invalid face count at line %d", lineNumber);
                 return Geometry{Error::FileFormatError};
             }
@@ -113,10 +152,10 @@ Geometry OffFileFormat::readGeometry(QIODevice *device) const
             break;
 
         case State::Vertices:
-            if (const auto x = line.section(' ', 0, 0).toFloat(&ok); ok) {
-                if (const auto y = line.section(' ', 1, 1).toFloat(&ok); ok) {
-                    if (const auto z = line.section(' ', 2, 2).toFloat(&ok); ok) {
-                        vertices.emplace_back(x, y, z);
+            if (const auto x = parse<float>(line.section(' ', 0, 0))) {
+                if (const auto y = parse<float>(line.section(' ', 1, 1))) {
+                    if (const auto z = parse<float>(line.section(' ', 2, 2))) {
+                        vertices.emplace_back(*x, *y, *z);
 
                         if (--vertexCount == 0)
                             state = State::Faces;
@@ -130,16 +169,16 @@ Geometry OffFileFormat::readGeometry(QIODevice *device) const
             return Geometry{Error::FileFormatError};
 
         case State::Faces:
-            if (const auto n = line.section(' ', 0, 0).toInt(&ok); ok) {
-                auto indices = std::vector<uint>{};
-                indices.reserve(n);
+            if (const auto n = parse<int>(line.section(' ', 0, 0))) {
+                auto indices = QVarLengthArray<uint>{};
+                indices.reserve(*n);
 
-                for (auto i = 1; i <= n; ++i) {
-                    const auto index = line.section(' ', i, i).toUInt(&ok);
-                    static_assert(std::is_unsigned_v<decltype(index)>);
+                for (auto i = 1; i <= *n; ++i) {
+                    const auto index = parse<uint>(line.section(' ', i, i));
+                    static_assert(std::is_unsigned_v<std::remove_reference_t<decltype(*index)>>);
 
-                    if (ok && index < vertices.size()) {
-                        indices.emplace_back(index);
+                    if (index && *index < vertices.size()) {
+                        emplaceBack(indices, *index);
                     } else {
                         qCWarning(lcInputOutput, "Invalid index at line %d, field %d", lineNumber, i);
                         return Geometry{Error::FileFormatError};
@@ -150,8 +189,8 @@ Geometry OffFileFormat::readGeometry(QIODevice *device) const
                 outline.reserve(indices.size());
 
                 for (auto j = 0; j < n; ++j) {
-                    const auto i = (j + n - 1) % n;
-                    const auto k = (j + 1) % n;
+                    const auto i = (j + *n - 1) % *n;
+                    const auto k = (j + 1) % *n;
 
                     auto a = vertices.at(indices.at(i));
                     auto b = vertices.at(indices.at(j));
@@ -192,10 +231,10 @@ Error OffFileFormat::writeGeometry(Geometry geometry, QIODevice *device) const
         faces.emplace_back();
         faces.back().reserve(p.vertices().count());
 
-        for (const auto &v: p.vertices()) {
+        for (const auto &pv = p.vertices(); const auto &v : pv) {
             const auto p = v.position();
 
-            auto it = std::find(vertices.begin(), vertices.end(), p);
+            auto it = std::ranges::find(vertices, p);
 
             if (it == vertices.end())
                 it = vertices.emplace(vertices.end(), p.x(), p.y(), p.z());
@@ -272,7 +311,8 @@ const FileFormat<Geometry> *offFileFormat()
 
 Geometry readGeometry(QString fileName)
 {
-    for (const auto &fileFormat: FileFormat<Geometry>::supported()) {
+    for (const auto &supportedGeometryFormats = FileFormat<Geometry>::supported();
+         const auto &fileFormat : supportedGeometryFormats) {
         if (fileFormat->accepts(fileName))
             return readGeometry(fileFormat, std::move(fileName));
     }
@@ -283,7 +323,8 @@ Geometry readGeometry(QString fileName)
 
 Error writeGeometry(Geometry geometry, QString fileName)
 {
-    for (const auto &fileFormat: FileFormat<Geometry>::supported()) {
+    for (const auto &supportedGeometryFormats = FileFormat<Geometry>::supported();
+         const auto &fileFormat : supportedGeometryFormats) {
         if (fileFormat->accepts(fileName))
             return writeGeometry(fileFormat, std::move(geometry), std::move(fileName));
     }

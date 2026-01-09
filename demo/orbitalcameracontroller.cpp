@@ -31,7 +31,7 @@ void OrbitCameraController::moveCamera(const InputState &state, float dt)
         if (state.shiftKeyActive) {
             translate(state, dt);
         } else {
-            translate(state, dt * 2.5);
+            translate(state, dt * 2.5f);
         }
     } else if (state.leftMouseButtonActive) {
         orbit(state.rxAxisValue * dt, state.ryAxisValue * dt);
@@ -39,7 +39,7 @@ void OrbitCameraController::moveCamera(const InputState &state, float dt)
 
     if (state.altKeyActive) {
         if (state.shiftKeyActive) {
-            translate(state, dt / 2.5);
+            translate(state, dt / 2.5f);
         } else {
             translate(state, dt);
         }

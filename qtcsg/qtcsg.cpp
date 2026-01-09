@@ -24,6 +24,7 @@
 
 #include <QRegularExpression>
 #include <cmath>
+#include <numbers>
 
 namespace QtCSG {
 
@@ -34,6 +35,7 @@ Q_LOGGING_CATEGORY(lcNode,      "qtcsg.node");
 Q_LOGGING_CATEGORY(lcOperator,  "qtcsg.operator");
 
 using Utils::reportError;
+using std::numbers::pi_v;
 
 template<class T>
 void flip(T &o)
@@ -48,6 +50,11 @@ auto matchGlobally(const QRegularExpression &pattern, QStringView subject)
 #else
     return pattern.globalMatch(std::move(subject));
 #endif
+}
+
+auto vector3DFromDouble(double x, double y, double z)
+{
+    return QVector3D{static_cast<float>(x), static_cast<float>(y), static_cast<float>(z)};
 }
 
 } // namespace
@@ -86,8 +93,8 @@ void Plane::flip()
 
 void Polygon::flip()
 {
-    std::reverse(m_vertices.begin(), m_vertices.end());
-    std::for_each(m_vertices.begin(), m_vertices.end(), &QtCSG::flip<Vertex>);
+    std::ranges::reverse(m_vertices);
+    std::ranges::for_each(m_vertices, &QtCSG::flip<Vertex>);
     m_plane.flip();
 }
 
@@ -100,8 +107,7 @@ Polygon Polygon::transformed(const QMatrix4x4 &matrix) const
         return vertex.transformed(matrix);
     };
 
-    std::transform(m_vertices.cbegin(), m_vertices.cend(),
-                   std::back_inserter(transformed), applyMatrix);
+    std::ranges::transform(m_vertices, std::back_inserter(transformed), applyMatrix);
 
     return Polygon{std::move(transformed)};
 }
@@ -188,8 +194,8 @@ Geometry Geometry::inversed() const
 {
     auto inverse = QList<Polygon>{};
     inverse.reserve(m_polygons.size());
-    std::copy(m_polygons.begin(), m_polygons.end(), std::back_inserter(inverse));
-    std::for_each(inverse.begin(), inverse.end(), &flip<Polygon>);
+    std::ranges::copy(m_polygons, std::back_inserter(inverse));
+    std::ranges::for_each(inverse, &flip<Polygon>);
     return Geometry{std::move(inverse)};
 }
 
@@ -202,8 +208,7 @@ Geometry Geometry::transformed(const QMatrix4x4 &matrix) const
         return polygon.transformed(matrix);
     };
 
-    std::transform(m_polygons.cbegin(), m_polygons.cend(),
-                   std::back_inserter(transformed), applyMatrix);
+    std::ranges::transform(m_polygons, std::back_inserter(transformed), applyMatrix);
 
     return Geometry{std::move(transformed)};
 }
@@ -378,7 +383,7 @@ Geometry parseGeometry(QString expression)
 
     if (argList != u")") {
         if (auto it = matchGlobally(s_argPattern, argList); it.hasNext()) {
-            auto expectedStart = 0;
+            auto expectedStart = qsizetype{0};
 
             while (it.hasNext()) {
                 const auto match = it.next();
@@ -422,7 +427,7 @@ Geometry cube(QVector3D center, QVector3D size)
         auto vertices = QList<Vertex>{};
         vertices.reserve(indices.size());
 
-        std::transform(indices.begin(), indices.end(), std::back_inserter(vertices), [=](int i) {
+        std::ranges::transform(indices, std::back_inserter(vertices), [=](int i) {
             const auto directions = QVector3D{
                 i & 1 ? +1.0f : -1.0f,
                 i & 2 ? +1.0f : -1.0f,
@@ -455,10 +460,13 @@ Geometry sphere(QVector3D center, float radius, int slices, int stacks)
     auto polygons = QList<Polygon>{};
 
     const auto vertex = [center, radius, slices, stacks](int i, int j) {
-        const auto theta = 2 * M_PI * i / slices;
-        const auto phi = M_PI * j / stacks;
+        const auto theta = 2 * pi_v<double> * i / slices;
+        const auto phi = pi_v<double> * j / stacks;
 
-        const auto normal = QVector3D{cosf(theta) * sinf(phi), cosf(phi), sinf(theta) * sinf(phi)};
+        const auto normal = vector3DFromDouble(std::cos(theta) * std::sin(phi),
+                                                                 std::cos(phi),
+                                               std::sin(theta) * std::sin(phi));
+
         return Vertex{center + normal * radius, normal};
     };
 
@@ -480,7 +488,8 @@ Geometry sphere(QVector3D center, float radius, int slices, int stacks)
     return Geometry{std::move(polygons)};
 }
 
-Geometry cylinder(QVector3D start, QVector3D end, float radius, float slices)
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+Geometry cylinder(QVector3D start, QVector3D end, float radius, int slices)
 {
     auto polygons = QList<Polygon>{};
 
@@ -492,12 +501,15 @@ Geometry cylinder(QVector3D start, QVector3D end, float radius, float slices)
     const auto vertexStart = Vertex{start, -axisZ};
     const auto vertexEnd = Vertex{end, axisZ};
 
-    const auto point = [=](int stack, int slice, int normalBlend) {
-        const auto phi = 2 * M_PI * slice / slices;
-        const auto out = (axisX * cosf(phi)) + (axisY * sinf(phi));
-        auto pos = start + (ray * stack) + (out * radius);
-        auto normal = out * (1 - abs(normalBlend)) + (axisZ * normalBlend);
-        return Vertex{std::move(pos), std::move(normal)};
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+    const auto point = [=](int stack, int slice, float normalBlend) {
+        const auto phi = static_cast<float>(2 * pi_v<double> * slice / slices);
+        const auto out = axisX * cosf(phi) + axisY * sinf(phi);
+
+        auto position = start + ray * static_cast<float>(stack) + out * radius;
+        auto normal   = out * (1.0f - abs(normalBlend)) + (axisZ * normalBlend);
+
+        return Vertex{std::move(position), std::move(normal)};
     };
 
     for (auto i = 0; i < slices; ++i) {
@@ -509,7 +521,7 @@ Geometry cylinder(QVector3D start, QVector3D end, float radius, float slices)
     return Geometry{std::move(polygons)};
 }
 
-Geometry cylinder(QVector3D center, float height, float radius, float slices)
+Geometry cylinder(QVector3D center, float height, float radius, int slices)
 {
     return cylinder(center - QVector3D{0, height/2, 0},
                     center + QVector3D{0, height/2, 0},
@@ -624,7 +636,7 @@ expected<Node, Error> Node::fromPolygons(QList<Polygon> polygons, int limit)
 
 void Node::invert()
 {
-    std::for_each(m_polygons.begin(), m_polygons.end(), &flip<Polygon>);
+    std::ranges::for_each(m_polygons, &flip<Polygon>);
 
     m_plane.flip();
 

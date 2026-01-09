@@ -68,9 +68,9 @@ private slots:
 
         const auto combination = [](const QVector3D &v)
         {
-            const auto s = scale(v.x() ? 2.0f : 1.0f,
-                                 v.y() ? 4.0f : 1.0f,
-                                 v.z() ? 8.0f : 1.0f);
+            const auto s = scale(qFuzzyIsNull(v.x()) ? 1.0f : 2.0f,
+                                 qFuzzyIsNull(v.y()) ? 1.0f : 4.0f,
+                                 qFuzzyIsNull(v.z()) ? 1.0f : 8.0f);
 
             const auto t = translation(v.x() * 1.0f,
                                        v.y() * 2.0f,
