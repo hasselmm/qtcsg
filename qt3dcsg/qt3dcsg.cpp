@@ -96,7 +96,7 @@ const QAttribute *findAttribute(const QGeometry *geometry, QAttribute::Attribute
     };
 
     const auto attributes = geometry->attributes();
-    const auto it = std::find_if(attributes.begin(), attributes.end(), acceptAttribute);
+    const auto it = std::ranges::find_if(attributes, acceptAttribute);
 
     if (it == attributes.end())
         return nullptr;
@@ -333,7 +333,7 @@ Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
         const auto i0 = static_cast<IndexType>(vertices.size());
 
         Q_ASSERT(vertices.size() + pv.count() <= std::numeric_limits<IndexType>::max());
-        std::copy(pv.begin(), pv.end(), std::back_inserter(vertices));
+        std::ranges::copy(pv, std::back_inserter(vertices));
 
         for (auto i = IndexType{2}; i < pv.count(); ++i) {
             indices.emplace_back(i0);
