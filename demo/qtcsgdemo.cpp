@@ -65,8 +65,10 @@ struct RenderingStyle {
     QColor specularColor;
 };
 
-const auto s_wireframeVisible = RenderingStyle{1.0f, 0.2f, QColor::fromRgbF(0.0, 0.0, 0.0, 0.0)};
-const auto s_wireframeHidden = RenderingStyle{0.0f, 1.0f, QColor::fromRgbF(0.95, 0.95, 0.95, 1.0)};
+const auto s_wireframeVisible = RenderingStyle{.lineWidth = 1.0f, .diffuseAlpha = 0.2f,
+                                               .specularColor = QColor::fromRgbF(0.0, 0.0, 0.0, 0.0)};
+const auto s_wireframeHidden = RenderingStyle{.lineWidth = 0.0f, .diffuseAlpha = 1.0f,
+                                              .specularColor = QColor::fromRgbF(0.95, 0.95, 0.95, 1.0)};
 
 // some utility functions making it easier to deal with matrices and vectors
 // -------------------------------------------------------------------------------------------------
