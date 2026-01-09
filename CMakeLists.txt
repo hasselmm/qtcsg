@@ -39,6 +39,8 @@ add_link_options(
 
 include(QtCSGDebug)
 include(QtCSGEnableAlternateLinker)
+include(QtCSGStaticCodeChecks)
+
 qtcsg_enable_alternate_linker()
 
 # Find Qt5 or Qt6
