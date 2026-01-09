@@ -106,8 +106,9 @@ void createEntity(QGeometryRenderer *renderer, QVector3D position, QColor color,
 template<class T>
 class StaticInit
 {
-public:
+private:
     StaticInit() { T::staticInit(); }
+    friend T;
 };
 
 // the demo application
