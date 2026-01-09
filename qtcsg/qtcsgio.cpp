@@ -234,7 +234,7 @@ Error OffFileFormat::writeGeometry(Geometry geometry, QIODevice *device) const
         for (const auto &pv = p.vertices(); const auto &v : pv) {
             const auto p = v.position();
 
-            auto it = std::find(vertices.begin(), vertices.end(), p);
+            auto it = std::ranges::find(vertices, p);
 
             if (it == vertices.end())
                 it = vertices.emplace(vertices.end(), p.x(), p.y(), p.z());

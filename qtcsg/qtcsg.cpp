@@ -93,8 +93,8 @@ void Plane::flip()
 
 void Polygon::flip()
 {
-    std::reverse(m_vertices.begin(), m_vertices.end());
-    std::for_each(m_vertices.begin(), m_vertices.end(), &QtCSG::flip<Vertex>);
+    std::ranges::reverse(m_vertices);
+    std::ranges::for_each(m_vertices, &QtCSG::flip<Vertex>);
     m_plane.flip();
 }
 
@@ -107,8 +107,7 @@ Polygon Polygon::transformed(const QMatrix4x4 &matrix) const
         return vertex.transformed(matrix);
     };
 
-    std::transform(m_vertices.cbegin(), m_vertices.cend(),
-                   std::back_inserter(transformed), applyMatrix);
+    std::ranges::transform(m_vertices, std::back_inserter(transformed), applyMatrix);
 
     return Polygon{std::move(transformed)};
 }
@@ -195,8 +194,8 @@ Geometry Geometry::inversed() const
 {
     auto inverse = QList<Polygon>{};
     inverse.reserve(m_polygons.size());
-    std::copy(m_polygons.begin(), m_polygons.end(), std::back_inserter(inverse));
-    std::for_each(inverse.begin(), inverse.end(), &flip<Polygon>);
+    std::ranges::copy(m_polygons, std::back_inserter(inverse));
+    std::ranges::for_each(inverse, &flip<Polygon>);
     return Geometry{std::move(inverse)};
 }
 
@@ -209,8 +208,7 @@ Geometry Geometry::transformed(const QMatrix4x4 &matrix) const
         return polygon.transformed(matrix);
     };
 
-    std::transform(m_polygons.cbegin(), m_polygons.cend(),
-                   std::back_inserter(transformed), applyMatrix);
+    std::ranges::transform(m_polygons, std::back_inserter(transformed), applyMatrix);
 
     return Geometry{std::move(transformed)};
 }
@@ -429,7 +427,7 @@ Geometry cube(QVector3D center, QVector3D size)
         auto vertices = QList<Vertex>{};
         vertices.reserve(indices.size());
 
-        std::transform(indices.begin(), indices.end(), std::back_inserter(vertices), [=](int i) {
+        std::ranges::transform(indices, std::back_inserter(vertices), [=](int i) {
             const auto directions = QVector3D{
                 i & 1 ? +1.0f : -1.0f,
                 i & 2 ? +1.0f : -1.0f,
@@ -636,7 +634,7 @@ expected<Node, Error> Node::fromPolygons(QList<Polygon> polygons, int limit)
 
 void Node::invert()
 {
-    std::for_each(m_polygons.begin(), m_polygons.end(), &flip<Polygon>);
+    std::ranges::for_each(m_polygons, &flip<Polygon>);
 
     m_plane.flip();
 
