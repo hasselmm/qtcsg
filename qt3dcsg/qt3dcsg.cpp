@@ -330,16 +330,19 @@ Geometry::Geometry(QtCSG::Geometry csg, Qt3DCore::QNode *parent)
 
     for (const auto &p: polygons) {
         const auto pv = p.vertices();
+
+        // avoid infinite loops from index never reacing the loop's upper limit
+        Q_ASSERT(vertices.size() + pv.count() <= std::numeric_limits<IndexType>::max());
+        const auto vertexCount = static_cast<IndexType>(pv.count());
         const auto i0 = static_cast<IndexType>(vertices.size());
 
-        Q_ASSERT(vertices.size() + pv.count() <= std::numeric_limits<IndexType>::max());
-        std::ranges::copy(pv, std::back_inserter(vertices));
-
-        for (auto i = IndexType{2}; i < pv.count(); ++i) {
+        for (auto i = IndexType{2}; i < vertexCount; ++i) {
             indices.emplace_back(i0);
             indices.emplace_back(i0 + i - 1);
             indices.emplace_back(i0 + i);
         }
+
+        std::ranges::copy(pv, std::back_inserter(vertices));
     }
 
     Q_ASSERT(vertices.size() == vertexCount);
